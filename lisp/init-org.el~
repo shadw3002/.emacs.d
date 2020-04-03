@@ -1,0 +1,92 @@
+
+(use-package org
+  :preface
+  (defun hot-expand (str &optional mod)
+    "Expand org template.
+
+STR is a structure template string recognised by org like <s. MOD is a
+string with additional parameters to add the begin line of the
+structure element. HEADER string includes more parameters that are
+prepended to the element after the #+HEADER: tag."
+    (let (text)
+      (when (region-active-p)
+        (setq text (buffer-substring (region-beginning) (region-end)))
+        (delete-region (region-beginning) (region-end)))
+      (insert str)
+      (if (fboundp 'org-try-structure-completion)
+          (org-try-structure-completion) ; < org 9
+        (progn
+          ;; New template expansion since org 9
+          (require 'org-tempo nil t)
+          (org-tempo-complete-tag)))
+      (when mod (insert mod) (forward-line))
+      (when text (insert text))))
+
+  :hook (org-mode . (lambda () (setq truncate-lines nil)))
+  :bind ("<f12>" . org-agenda)
+  :config
+  (setq org-src-fontify-natively t)
+
+  (general-define-key
+    :keymaps 'org-mode-map
+    :prefix "C-c"
+    "i" 'org-toggle-inline-images
+    "l" 'org-toggle-latex-fragment
+    "c" 'org-capture)
+
+  (general-define-key
+    :prefix "C-c"
+    "c" 'org-capture)
+
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
+
+  (org-babel-do-load-languages
+    'org-babel-load-languages
+    '((emacs-lisp . t)
+      (haskell . t)
+      (latex . t)
+      (lilypond . t)
+      (dot . t)))
+
+  (setq org-todo-keywords
+      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+
+
+  (setq org-todo-keyword-faces
+      (quote (("TODO" :foreground "red" :weight bold)
+              ("NEXT" :foreground "blue" :weight bold)
+              ("DONE" :foreground "forest green" :weight bold)
+              ("WAITING" :foreground "orange" :weight bold)
+              ("HOLD" :foreground "magenta" :weight bold)
+              ("CANCELLED" :foreground "forest green" :weight bold)
+              ("MEETING" :foreground "forest green" :weight bold)
+              ("PHONE" :foreground "forest green" :weight bold))))
+
+  ;; Capture in org-mode
+  (setq org-default-notes-file (concat org-directory "/notes.org"))
+  (global-set-key (kbd "\C-cc") 'org-capture)
+  (setq org-agenda-files (quote ("~/Knowledge/PrivateData/GTD/works.org"
+                                 )))
+
+  ;; GTD in org-mode
+  (setq gtd-directory "~/knowledge/PrivateData/GTD/")
+  (setq org-capture-templates
+        '(("w" "Work"
+           entry (file+headline "~/Knowledge/PrivateData/GTD/works.org" "Works")
+           "* TODO %?\n  Entered on %U\n  %i\n")))
+
+
+
+  :config
+  (use-package org-bullets
+    :hook (org-mode . org-bullets-mode)
+    :init (setq org-bullets-bullet-list '("⦿" "○" "✸" "✿" "◆")))
+
+  (use-package org-download
+    :config
+    (setq org-download-display-inline-images nil)
+    (setq org-download-image-org-width 150))
+)
+
+(provide 'init-org)

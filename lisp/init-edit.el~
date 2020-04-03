@@ -1,0 +1,4 @@
+(use-package rainbow-delimiters-mode
+  :hook (prog-mode . rainbow-delimiters))
+
+(provide 'init-editing)
