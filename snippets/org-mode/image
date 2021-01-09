@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: image
+# key: <im
+# --
+[[file:${:filename}]]$0

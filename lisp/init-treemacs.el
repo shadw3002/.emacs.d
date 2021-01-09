@@ -71,4 +71,12 @@
   :ensure t
   :config (treemacs-icons-dired-mode))
 
+(use-package doom-themes
+  :config
+  ;; Enable custom treemacs theme (all-the-icons must be installed!)
+  (setq doom-themes-treemacs-theme "doom-colors") ; use the colorful treemacs theme
+  (doom-themes-treemacs-config)
+  )
+
+
 (provide 'init-treemacs)

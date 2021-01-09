@@ -490,9 +490,9 @@ It's inserted before the image link and is used to annotate it.")
     ; (insert (if (= org-download-image-org-width 0)
     ;             ""
     ;           (format "#+attr_org: :width %dpx\n" org-download-image-org-width)))
-    (insert (format "#+attr_org: :width %dpx" org-download-image-org-width))
-    (org-indent-line)
-    (evil-ret-and-indent)
+    ; (insert (format "#+attr_org: :width %dpx" org-download-image-org-width))
+    ; (org-indent-line)
+    ; (evil-ret-and-indent)
     (insert
      (format org-download-link-format
              (org-link-escape
