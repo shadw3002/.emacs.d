@@ -34,6 +34,10 @@
 
 (require 'init-package)
 
+(dolist (package '(use-package))
+   (unless (package-installed-p package)
+       (package-install package)))
+
 (let ((gc-cons-threshold most-positive-fixnum)
       ;; 加载的时候临时增大`gc-cons-threshold'以加速启动速度。
       ;; 清空避免加载远程文件的时候分析文件。

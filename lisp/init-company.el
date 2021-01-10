@@ -1,4 +1,5 @@
 (use-package company
+  :ensure t
   :hook
   (prog-mode . company-mode)
   (org-mode . company-mode)

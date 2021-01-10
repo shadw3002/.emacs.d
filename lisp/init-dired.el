@@ -1,4 +1,5 @@
 (use-package dired
+  :ensure t
   :init
   ;; Always delete and copy recursively
   (setq dired-recursive-deletes 'always

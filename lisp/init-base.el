@@ -44,6 +44,7 @@
 
 
 (use-package smartparens
+  :ensure t
   :init
   (bind-key "C-M-f" #'sp-forward-sexp smartparens-mode-map)
   (bind-key "C-M-b" #'sp-backward-sexp smartparens-mode-map)
