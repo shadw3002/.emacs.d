@@ -1,0 +1,1261 @@
+* Preload
+** Lexical Binding
+In order to enable lexical binding in the config, this must be the first line of Emacs Lisp: 
+
+#+begin_src elisp
+  ;;; -*- lexical-binding: t -*-
+#+end_src
+
+* Intro
+#+begin_src elisp
+#+end_src
+
+* Optimizations
+** Emacs GC
+The default value of Emacs's GC gabage collection threshold is quite small (800 KiB)
+
+How to setup a appropriate value? Here is two questions:
+1. A higher threshold: more annoying hangs of the whole universe.
+2. A Lower threshold: more numbers of GC runs
+
+ref: http://akrl.sdf.org/#org2a987f7
+
+#+begin_src elisp
+(defmacro k-time (&rest body)
+  "Measure and return the time it takes evaluating BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (float-time (time-since time))))
+
+;; Set garbage collection threshold to 256 MiB.
+(setq gc-cons-threshold #x10000000)
+
+(defvar k-gc-timer
+  (run-with-idle-timer 15 t
+                       (lambda ()
+                         ;; (message "Garbage Collector has run for %.06fsec")
+                                  (k-time (garbage-collect))
+                                  )))
+#+end_src
+
+** InterProcess Communication
+Increase the amount of data from the process:, `lsp-mode' gains: 
+
+#+begin_src elisp
+  (setq read-process-output-max (* 1024 1024))
+#+end_src
+
+** Disable Bidirectional Text Rendering
+Tricks stolen from https://github.com/CSRaghunandan/.emacs.d/blob/master/setup-files/setup-optimizations.el. 
+
+Disable bidirectional text rendering for a modest performance boost. Of course, this renders Emacs unable to detect/display right-to-left languages (sorry!), but for us left-to-right language speakers/writers, it's a boon.
+
+#+begin_src elisp
+  (setq-default bidi-display-reordering 'left-to-right
+                bidi-paragraph-direction 'left-to-right)
+#+end_src
+
+* Package Management
+** Load Build-in Package
+#+begin_src elisp
+  (require 'package)
+#+end_src
+
+** Config Package Archives
+#+begin_src elisp
+  (setq package-archives
+      '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
+        ("org-cn"   . "http://elpa.zilongshanren.com/org/")
+        ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))
+#+end_src
+
+** Initialize
+#+begin_src elisp
+  (package-initialize)
+#+end_src 
+
+** Require ~use-package~
+[[https://github.com/jwiegley/use-package][use-package]] provide the ~use-package~ macro, which allows you to isolate package configuration in your ~.emacs~ file in a way that is both performance-oriented and, well, tidy.
+
+Ensure ~use-package~ will be installed, if ~use-package~ hasn't installed. 
+#+begin_src elisp
+  (when (not (package-installed-p 'use-package))
+    (package-refresh-contents)
+    (package-install 'use-package))
+  (require 'use-package)
+#+end_src
+
+** Ensure Packages Installed
+~:ensure~ will install a package if it is not already installed, but it does not keep it up-to-date. 
+#+begin_src elisp
+  (require 'use-package-ensure)
+  (setq use-package-always-ensure t)
+#+end_src
+
+** Ensure Packages Up-to-date
+If you want to keep your packages updated automatically, one option is to use ~auto-package-update~
+#+begin_src elisp
+  ;; (use-package auto-package-update
+  ;;   :config
+  ;;   (setq auto-package-update-delete-old-versions t)
+  ;;   (setq auto-package-update-hide-results t)
+  ;;   (auto-package-update-maybe))
+#+end_src
+
+* Basic UI
+
+** Icons
+#+begin_src elisp
+  (use-package all-the-icons)
+#+end_src
+
+** Color Theme
+#+begin_src elisp
+  (use-package modus-themes
+    ;; :ensure
+    :init
+    ;; Add all your customizations prior to loading the themes
+    (setq modus-themes-org-blocks 'gray-background
+          modus-themes-bold-constructs t
+          modus-themes-italic-constructs t
+          modus-themes-mixed-fonts t
+          modus-themes-links '(faint)
+          modus-themes-headings '((t . (monochrome semibold)))
+          modus-themes-scale-headings t
+          modus-themes-scale-1 1.15
+          modus-themes-scale-2 1.20
+          modus-themes-scale-3 1.25
+          modus-themes-scale-4 1.30
+          modus-themes-scale-title 2.0
+          modus-themes-scale-small 0.9
+          modus-themes-variable-pitch-ui t
+          modus-themes-variable-pitch-headings t)
+  
+    ;; Load the theme files before enabling a theme
+    (modus-themes-load-themes)
+    :config
+    ;; Load the theme of your choice:
+    (modus-themes-load-operandi)
+    :bind ("<f5>" . modus-themes-toggle))
+#+end_src
+
+** Cursor
+Set default cursor type to bar.
+#+begin_src elisp
+  (setq-default cursor-type 'bar) 
+#+end_src
+
+Disable cursor in inactive window.
+#+begin_src elisp
+  (setq-default cursor-in-non-selected-windows nil)
+#+end_src
+
+** Fringe
+#+begin_src elisp
+(use-package emacs
+  :custom-face
+  (fringe ((t (:background nil))))
+  :config
+  ;; Disable ugly bitmap in fringe.
+  (define-fringe-bitmap 'left-arrow [])
+  (define-fringe-bitmap 'left-curly-arrow [])
+  (define-fringe-bitmap 'left-triangle [])
+  ;; Display … and ↩ for truncation and wrap.
+  (defface fallback '((t :family "Fira Code Light"
+                         :foreground "gray")) "Fallback")
+  (set-display-table-slot standard-display-table 'truncation
+                          (make-glyph-code ?… 'fallback))
+  (set-display-table-slot standard-display-table 'wrap
+                        (make-glyph-code ?↩ 'fallback)))
+#+end_src
+
+
+** Scroll Bar 
+Disable scroll bar.
+#+begin_src elisp
+  (scroll-bar-mode 0)
+#+end_src
+
+** Modeline
+Use a single line as modeline.
+#+begin_src elisp
+(use-package emacs
+  :custom-face
+  (header-line ((t (:background "grey90" :foreground "grey20" :box nil))))
+  (mode-line ((t (:foreground "dim gray" :underline t :height 0.1))))
+  (mode-line-inactive ((t (:inherit mode-line))))
+  :config
+  (setq-default mode-line-format '("")))
+#+end_src
+
+** Center Window
+#+begin_src elisp
+(use-package perfect-margin
+  :custom
+  (perfect-margin-visible-width 90)
+  :config
+  ;; enable perfect-mode
+  ;; (perfect-margin-mode t)
+  
+  ;; add additinal bding on margin area
+  (dolist (margin '("<left-margin> " "<right-margin> "))
+  (global-set-key (kbd (concat margin "<mouse-1>")) 'ignore)
+  (global-set-key (kbd (concat margin "<mouse-3>")) 'ignore)
+  (dolist (multiple '("" "double-" "triple-"))
+      (global-set-key (kbd (concat margin "<" multiple "wheel-up>")) 'mwheel-scroll)
+      (global-set-key (kbd (concat margin "<" multiple "wheel-down>")) 'mwheel-scroll))))
+#+end_src
+   
+** Pairs
+highlights: 
+#+begin_src elisp
+  (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+
+** Line Number
+#+begin_src elisp
+  ;; show line number
+  (global-linum-mode 1)
+
+  ;; close linum-mode somewhere
+  (use-package linum-off
+    :config
+    (setq linum-disabled-modes-list
+          '(eshell-mode
+            wl-summary-mode
+            compilation-mode
+            org-mode
+            text-mode
+            dired-mode
+            nov-mode
+            pdf-view-mode)))
+#+end_src
+
+** Fonts
+#+begin_src elisp
+  (if (display-graphic-p)
+      (progn
+        ;; Auto generated by cnfonts
+        ;; <https://github.com/tumashu/cnfonts>
+        (set-face-attribute
+         'default nil
+         :font (font-spec :name "-ADBO-Source Code Pro-ultrabold-italic-normal-*-*-*-*-*-m-0-iso10646-1"
+                          :weight 'normal
+                          :slant 'normal
+                          :size 18.0))
+        (dolist (charset '(kana han symbol cjk-misc bopomofo))
+          (set-fontset-font
+           (frame-parameter nil 'font)
+           charset
+           (font-spec :name "-ADBE-Source Han Sans CN Medium-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1"
+                      :weight 'normal
+                      :slant 'normal
+                      :size 21.0)))))
+#+end_src
+
+
+* Basic UX
+
+** yes or no
+Ask ~y~ or ~n~ instead of ~yes~ or ~no~. Use ~return~ to act ~y~.
+#+begin_src elisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+  (define-key y-or-n-p-map (kbd "RET") 'act)
+#+end_src
+
+** Scroll
+#+begin_src elisp
+;; (setq scroll-up-aggressively 0.01
+;;       scroll-down-aggressively 0.01
+;;       scroll-margin 0
+;;       scroll-conservatively 5
+;;       redisplay-skip-fontification-on-input t)
+#+end_src
+
+** Messages
+Disable these messages by setting command-error-function to a function that ignores unused signals. 
+
+Ref: https://emacs.stackexchange.com/a/20039/19518
+
+#+begin_src elisp
+  (defun filter-command-error-function (data context caller)
+    "Ignore the buffer-read-only, beginning-of-line, end-of-line, beginning-of-buffer, end-of-buffer signals; pass the rest to the default handler."
+    (when (not (memq (car data) '(buffer-read-only
+                                  beginning-of-line
+                                  end-of-line
+                                  beginning-of-buffer
+                                  end-of-buffer)))
+      (command-error-default-function data context caller)))
+  
+  (setq command-error-function #'filter-command-error-function)
+#+end_src
+
+Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552. 
+
+#+begin_src elisp
+  (defun suppress-messages (old-fun &rest args)
+    (cl-flet ((silence (&rest args1) (ignore)))
+      (advice-add 'message :around #'silence)
+      (unwind-protect
+           (apply old-fun args)
+        (advice-remove 'message #'silence))))
+  
+  (advice-add 'org-cycle :around #'suppress-messages)
+  ;; Disable init message.
+  (fset 'display-startup-echo-area-message 'ignore)
+#+end_src
+
+** Shortkeys Hint
+[[https://github.com/justbur/emacs-which-key][which-key]] displays available keybindings in popup.
+
+#+begin_src elisp
+(use-package which-key
+  :bind
+  (:map help-map ("C-h" . which-key-C-h-dispatch))
+  :hook
+  (after-init . which-key-mode)
+  :custom
+  (which-key-idle-delay 0.3)
+  (which-key-popup-type 'side-window)
+  (which-key-side-window-location 'bottom)
+  (which-key-show-docstrings t)
+  (which-key-max-display-columns 2)
+  (which-key-show-prefix nil)
+  (which-key-side-window-max-height 8)
+  (which-key-max-description-length 80))
+#+end_src
+
+* ShoreKeys
+#+begin_src elisp
+  ;; 方便定义快捷键
+  (use-package general
+    :ensure t)
+
+  ;; 定义临时快捷键 state
+  (use-package hydra
+    :commands (hydra-default-pre
+               hydra-keyboard-quit
+               hydra--call-interactively-remap-maybe
+               hydra-show-hint
+               hydra-set-transient-map))
+
+  ;; pretty-hydra provides a macro pretty-hydra-define to make it easy to create hydras with a pretty table layout with some other bells and whistles
+  (use-package pretty-hydra)
+
+#+end_src
+
+* Snippets
+#+begin_src elisp
+  (use-package yasnippet
+    :diminish yas-minor-mode
+    :hook (after-init . yas-global-mode)
+    :config
+    (setq yas-snippet-dirs
+          '("~/.emacs.d/snippets"
+            ))
+    )
+#+end_src
+
+* Tree
+#+begin_src elisp
+  (use-package treemacs
+    :ensure t
+    :defer t
+    :init
+    (with-eval-after-load 'winum
+      (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+    :config
+    (progn
+      (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+            treemacs-deferred-git-apply-delay      0.5
+            treemacs-display-in-side-window        t
+            treemacs-eldoc-display                 t
+            treemacs-file-event-delay              5000
+            treemacs-file-follow-delay             0.2
+            treemacs-follow-after-init             t
+            treemacs-git-command-pipe              ""
+            treemacs-goto-tag-strategy             'refetch-index
+            treemacs-indentation                   2
+            treemacs-indentation-string            " "
+            treemacs-is-never-other-window         nil
+            treemacs-max-git-entries               5000
+            treemacs-missing-project-action        'ask
+            treemacs-no-png-images                 nil
+            treemacs-no-delete-other-windows       t
+            treemacs-project-follow-cleanup        nil
+            treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+            treemacs-position                      'left
+            treemacs-recenter-distance             0.1
+            treemacs-recenter-after-file-follow    nil
+            treemacs-recenter-after-tag-follow     nil
+            treemacs-recenter-after-project-jump   'always
+            treemacs-recenter-after-project-expand 'on-distance
+            treemacs-show-cursor                   nil
+            treemacs-show-hidden-files             t
+            treemacs-silent-filewatch              nil
+            treemacs-silent-refresh                nil
+            treemacs-sorting                       'alphabetic-desc
+            treemacs-space-between-root-nodes      t
+            treemacs-tag-follow-cleanup            t
+            treemacs-tag-follow-delay              1.5
+            treemacs-width                         35)
+
+      ;; The default width and height of the icons is 22 pixels. If you are
+      ;; using a Hi-DPI display, uncomment this to double the icon size.
+      ;;(treemacs-resize-icons 44)
+
+      (treemacs-follow-mode t)
+      (treemacs-filewatch-mode t)
+      (treemacs-fringe-indicator-mode t)
+      (pcase (cons (not (null (executable-find "git")))
+                   (not (null treemacs-python-executable)))
+        (`(t . t)
+         (treemacs-git-mode 'deferred))
+        (`(t . _)
+         (treemacs-git-mode 'simple))))
+    :bind
+    (:map global-map
+          ("M-0"       . treemacs-select-window)
+          ("C-x t 1"   . treemacs-delete-other-windows)
+          ("C-x t t"   . treemacs)
+          ("C-x t B"   . treemacs-bookmark)
+          ("C-x t C-t" . treemacs-find-file)
+          ("C-x t M-t" . treemacs-find-tag)))
+
+  (use-package treemacs-evil
+    :after treemacs evil
+    :ensure t)
+
+  (use-package treemacs-icons-dired
+    :after treemacs dired
+    :ensure t
+    :config (treemacs-icons-dired-mode))
+
+
+#+end_src
+
+* Completion
+#+begin_src elisp
+  (use-package company
+    :hook
+    (prog-mode . company-mode)
+    (org-mode . company-mode)
+    :config
+    (setq company-tooltip-align-annotations t))
+#+end_src
+
+
+* Search
+#+begin_src elisp
+;; counsel includes ivy and swiper. 
+(use-package counsel
+  :ensure t
+  :hook
+  (after-init . ivy-mode)
+  (after-init . counsel-mode)
+  
+  :config
+
+  ;; all-the-icons 美化
+  ;; https://github.com/asok/all-the-icons-ivy
+  ;; (use-package all-the-icons-ivy
+  ;;   :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
+  
+  ;; 移动搜索框位置
+  ;; https://github.com/tumashu/ivy-posframe
+  ;; (use-package ivy-posframe
+  ;;   :config
+  ;; 
+  ;;   ;; 显示位置为居中，
+  ;;   (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
+  ;; 
+  ;;   ;; 设置边框
+  ;;   (setq ivy-posframe-parameters
+  ;;     '((left-fringe . 8)
+  ;;       (right-fringe . 8)))
+  ;;   
+  ;;   (ivy-posframe-mode 1)
+  ;; )
+  
+  
+  (general-define-key
+  :prefix "C-c"
+  "b" 'counsel-switch-buffer
+  "r" 'counsel-recentf
+  )
+
+  ;; 显示搜索结果至少输入 1 个字符
+  (setq counsel-more-chars-alist 1))
+
+(use-package evil
+  :bind ("C-s" . counsel-grep-or-swiper))
+
+;; 拼音支持
+;; from https://emacs-china.org/t/topic/6069/23
+(use-package pyim
+  :after ivy
+  :config
+
+  (defun eh-ivy-cregexp (str)
+    (let ((x (ivy--regex-plus str))
+          (case-fold-search nil))
+      (if (listp x)
+          (mapcar (lambda (y)
+                    (if (cdr y)
+                        (list (if (equal (car y) "")
+                                  ""
+                                (pyim-cregexp-build (car y)))
+                              (cdr y))
+                      (list (pyim-cregexp-build (car y)))))
+                  x)
+        (pyim-cregexp-build x))))
+  
+  (setq ivy-re-builders-alist
+        '((t . eh-ivy-cregexp))))
+#+end_src
+
+* Basic Editing
+** Evil Mode
+[[https://github.com/emacs-evil/evil][evil-mode]] is an extensible vi layer for Emacs. It emulates the main features of Vim, and provides facilities for writing custom extensions.
+
+*** Basic
+#+begin_src elisp
+(use-package evil
+  :bind
+  (:map evil-normal-state-map
+	("j"   . evil-next-visual-line)
+	("k"   . evil-previous-visual-line)
+	;; ("u"   . undo-fu-only-undo)
+	;; ("C-r" . undo-fu-only-redo)
+   :map evil-insert-state-map
+	("C-v" . evil-visual-block)
+   :map evil-motion-state-map
+	("RET" . nil))
+  :init
+  (setq evil-want-keybinding nil)
+  (setq evil-emacs-state-cursor 'bar)
+  :hook
+  (after-init . evil-mode)
+  :config
+
+  ;; https://stackoverflow.com/a/10166400/9984029
+  ;; Make ESC cancel selection in insert mode.
+  (defun evil-escape-cancel-selection-first ()
+    "In evil insert state, make ESC to cancel selection first, then press ESC to go to normal state."
+    (interactive)
+    (if (and delete-selection-mode transient-mark-mode mark-active)
+	(setq deactivate-mark  t)
+      (evil-normal-state)))
+  (define-key evil-insert-state-map [escape] 'evil-escape-cancel-selection-first)
+    ;; Consist keybinding for text movements.
+  (define-key evil-normal-state-map "\C-e" 'end-of-line)
+  (define-key evil-insert-state-map "\C-e" 'end-of-line)
+  (define-key evil-visual-state-map "\C-e" 'end-of-line)
+  (define-key evil-motion-state-map "\C-e" 'end-of-line)
+  (define-key evil-normal-state-map "\C-f" 'forward-char)
+  (define-key evil-insert-state-map "\C-f" 'forward-char)
+  (define-key evil-insert-state-map "\C-f" 'forward-char)
+  (define-key evil-normal-state-map "\C-b" 'backward-char)
+  (define-key evil-insert-state-map "\C-b" 'backward-char)
+  (define-key evil-visual-state-map "\C-b" 'backward-char)
+  (define-key evil-normal-state-map "\C-d" 'delete-char)
+  (define-key evil-insert-state-map "\C-d" 'delete-char)
+  (define-key evil-visual-state-map "\C-d" 'delete-char)
+  (define-key evil-normal-state-map "\C-n" 'next-line)
+  (define-key evil-insert-state-map "\C-n" 'next-line)
+  (define-key evil-visual-state-map "\C-n" 'next-line)
+  (define-key evil-normal-state-map "\C-p" 'previous-line)
+  (define-key evil-insert-state-map "\C-p" 'previous-line)
+  (define-key evil-visual-state-map "\C-p" 'previous-line)
+  :custom
+  ;; Do not echo the state in minibuffer.
+  (evil-echo-state nil)
+  ;; Use native keybindings on insert state.
+  (evil-disable-insert-state-bindings t)
+  ;; Records changes to separate undo instead of a big one in insert state.
+  (evil-want-fine-undo t))
+#+end_src
+
+** File Locking
+No need for =~= files when editing. 
+#+begin_src elisp
+  (setq create-lockfiles nil)
+#+end_src
+
+** Tab & Indents
+Indent with 2 whitespaces, ues spaces instead of tabs. 
+#+begin_src elisp
+  (setq-default tab-width 2)
+  (setq-default indent-tabs-mode nil)
+#+end_src
+
+** Save Editing Places
+#+begin_src elisp
+(use-package saveplace
+  :hook (after-init . save-place-mode)
+  :config
+  ;; keep track of saved places in ~/.emacs.d/places
+  (setq save-place-file (concat user-emacs-directory "places")))
+#+end_src
+
+** Disable Auto Saving
+#+begin_src elisp
+  (setq-default auto-save nil)
+#+end_src
+
+** Backups
+Emacs can automatically create backup files. This tells Emacs to put all backups in =~/.emacs.d/backups=. More info: http://www.gnu.org/software/emacs/manual/html_node/elisp/Backup-Files.html
+#+begin_src elisp
+  (setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backups"))))
+#+end_src
+
+** Recent Opened Files
+Record 64 newest recent opened files. 
+#+begin_src elisp
+  (use-package recentf
+    :config
+    (setq recentf-max-menu-items 64)
+    (setq recentf-max-saved-items 64))
+#+end_src
+
+** Pairs
+Auto pair brackets, quotes etc:
+#+begin_src elisp
+  (electric-pair-mode 1)
+#+end_src
+
+** Auto Creating Directory
+#+begin_src elisp
+  (defun create-missing-directories-h ()
+      "Automatically create missing directories when creating new files."
+      (unless (file-remote-p buffer-file-name)
+        (let ((parent-directory (file-name-directory buffer-file-name)))
+          (and (not (file-directory-p parent-directory))
+               (y-or-n-p (format "Directory `%s' does not exist! Create it?"
+                                 parent-directory))
+               (progn (make-directory parent-directory 'parents)
+                      t)))))
+  (add-hook 'find-file-not-found-functions #'create-missing-directories-h)
+#+end_src
+
+** Chinese Input
+#+begin_src elisp
+  (use-package rime
+    :custom
+    (default-input-method "rime")
+    :config
+    (setq rime-share-data-dir "/usr/share/rime-data")
+    (setq rime-user-data-dir "~/.emacs.d/rime")
+    (setq rime-posframe-properties
+          (list :background-color "#333333"
+                :foreground-color "#dcdccc"
+                ;; :font "WenQuanYi Micro Hei Mono-14"
+                :internal-border-width 10))
+  
+    (setq rime-disable-predicates
+          '(
+            ;; 在 evil-mode 的非编辑状态下 
+            rime-predicate-evil-mode-p
+            ;; 在英文字符串之后（必须为以字母开头的英文字符串）
+            rime-predicate-after-alphabet-char-p
+            ;; 在 prog-mode 和 conf-mode 中除了注释和引号内字符串之外的区域
+            rime-predicate-prog-in-code-p
+            ;; 当要在任意英文字符之后输入符号时
+            rime-predicate-punctuation-after-ascii-p
+          
+          
+            ;; 将要输入的为大写字母时
+            rime-predicate-current-uppercase-letter-p
+            ;; 在 (La)TeX 数学环境中或者输入 (La)TeX 命令时
+            rime-predicate-tex-math-or-command-p
+            ;; 如果激活了一个 hydra keymap
+            rime-predicate-hydra-p
+            ))
+  
+    (setq rime-inline-predicates
+          '(
+            ;; 光标在一个中文+空格的后面
+            rime-predicate-space-after-cc-p
+            ))
+
+    
+
+    (setq rime-inline-ascii-trigger 'shift-l)
+  
+    (setq default-input-method "rime"
+          rime-show-candidate 'posframe))
+#+end_src
+
+
+* Writing Languages
+** Org Mode
+*** Basic
+*** Images
+#+begin_src elisp
+  (use-package org
+    :custom
+    (org-startup-with-inline-images t)
+    ;; Do not display image actual width, set to 500px by default.
+    (org-image-actual-width 500)
+    ;; Always download and display remote images.
+    ;; (org-display-remote-inline-image 'download)
+  )
+#+end_src
+*** Latex
+
+
+*** Indent & Margin
+#+begin_src elisp
+(use-package org
+  :hook
+  ;; enable headline and subcontent in the indented view.
+  (org-mode . org-indent-mode)
+  ;; center content
+  (org-mode . perfect-margin-mode) 
+  :custom
+  ;; fold all contents on opening a org file.
+  ;; (org-startup-folded t)
+  ;; disable reindent on every time editing code block.
+  (org-src-preserve-indentation nil)
+  (org-edit-src-content-indentation 2)
+  ;; turncate lines
+  (org-startup-truncated nil))
+#+end_src
+
+*** UX
+#+begin_src elisp
+(use-package org
+  :init
+  ;; fix not working sometimes.
+  ;; enable shift selection in insert and visual mode.
+  (add-hook 'evil-insert-state-entry-hook
+            (lambda()
+              (setq org-support-shift-select 'always)))
+  (add-hook 'evil-normal-state-entry-hook
+            (lambda()
+              (setq org-support-shift-select nil)))
+  (add-hook 'evil-visual-state-entry-hook
+            (lambda()
+              (setq org-support-shift-select 'always)))
+  :custom
+  ;; use return to open link.
+  (org-return-follows-link t)
+  )
+#+end_src
+
+*** Export
+#+begin_src elisp
+  ;; (use-package
+  ;;   :custom
+  ;;   ;; export org to pdf through latex, support chinese.
+  ;;   (org-latex-pdf-process '("xelatex -interaction nonstopmode %f" "xelatex -interaction nonstopmode %f")))
+#+end_src
+
+** Dot
+#+begin_src elisp
+  (use-package graphviz-dot-mode
+    :config
+    (setq graphviz-dot-indent-width 4))
+#+end_src
+
+** Plantuml
+#+begin_src elisp
+  (use-package plantuml-mode
+    :ensure t
+    :mode "\\.plu\\'"
+    :config
+    (setq plantuml-default-exec-mode 'executable)
+    (setq plantuml-executable-path "/usr/bin/plantuml")
+    (setq org-plantuml-jar-path "/usr/share/plantuml/lib/plantuml.jar"))
+
+#+end_src
+
+* MyBase
+** Root Directory
+#+begin_src elisp
+  (defvar mybase-root-dir "/home/hermit/MyBase/")
+#+end_src
+
+** Reactor
+*** Util
+Helper function to refile:
+#+begin_src elisp
+  (defvar mybase-reactor-refile-directly-show-after nil
+    "When refiling directly (using the `mybase-reactor--refile-directly'
+  function), show the destination buffer afterwards if this is set
+  to `t', otherwise, just do everything in the background.")
+  
+  (defun mybase-reactor-refile-directly (file-dest)
+  "Move the current subtree to the end of FILE-DEST.
+  If SHOW-AFTER is non-nil, show the destination window,
+  otherwise, this destination buffer is not shown."
+    (interactive "fDestination: ")
+  
+    (defun dump-it (file contents)
+      (find-file-other-window file-dest)
+      (goto-char (point-max))
+      (insert "\n" contents))
+  
+    (save-excursion
+      (let* ((region (org-subtree-region))
+             (contents (buffer-substring (first region) (second region))))
+        (apply 'kill-region region)
+        (if mybase-reactor-refile-directly-show-after
+            (save-current-buffer (dump-it file-dest contents))
+          (save-window-excursion (dump-it file-dest contents))))))
+#+end_src
+   
+*** Inbox
+Basic vars: 
+#+begin_src elisp
+  (defvar mybase-reactor-inbox-file    (concat mybase-root-dir "Reactor/Inbox/main.org"))
+#+end_src
+
+Config ~org-capture~:
+#+begin_src elisp
+  (use-package org
+   :config
+   (setq org-capture-templates '())
+   (add-to-list
+     'org-capture-templates
+     '("b" "Bullet"
+       entry (file mybase-reactor-inbox-file)
+       "* TODO %?\n:PROPERTIES:\n:CREATED:%U\n:END:\n\n%i\n"
+       :empty-lines 1))
+  (setq org-default-notes-file (concat org-directory "/notes.org"))
+  (global-set-key (kbd "\C-cc") 'org-capture))
+#+end_src
+
+Refile:
+#+begin_src elisp
+(defun mybase-refile-to-tasks ()
+  "Refile (move) the current Org subtree to `mybase-reactor-tasks-file'."
+  (interactive)
+  (mybase-reactor-refile-directly mybase-reactor-tasks-file))
+
+(defun mybase-refile-to-incubate ()
+  "Refile (move) the current Org subtree to `mybase-reactor-incubate-file'."
+  (interactive)
+  (mybase-reactor-refile-directly mybase-reactor-incubate-file))
+
+(defun mybase-refile-to-projects ()
+  "Refile (move) the current Org subtree to `mybase-reactor-projects-file'."
+  (interactive)
+  (let ((title (org-entry-get nil "ITEM")))
+    (make-directory (concat mybase-reactor-projects-dir "/" title))
+    (mybase-reactor-refile-directly (concat mybase-reactor-projects-dir "/" title "/main.org"))))
+#+end_src
+
+*** Projects
+Basic vars: 
+#+begin_src elisp
+  (defvar mybase-reactor-projects-dir  (concat mybase-root-dir "Reactor/Projects"))
+#+end_src
+
+Add inbox and projects to ~org-agenda~:
+#+begin_src elisp
+  (use-package org
+   :config
+   ;; (setq org-agenda-files '())
+   (mapcar
+     (lambda (x) (add-to-list 'org-agenda-files x))
+     (directory-files-recursively mybase-reactor-projects-dir "\.org$")))
+#+end_src
+
+*** Journal
+Basic vars: 
+#+begin_src elisp
+  (defvar mybase-reactor-journal-dir   (concat mybase-root-dir "Reactor/Journal"))
+#+end_src
+
+*** Tasks
+Basic vars: 
+#+begin_src elisp
+  (defvar mybase-reactor-tasks-file    (concat mybase-root-dir "Reactor/Tasks/main.org"))
+#+end_src
+
+Config keywords:
+#+begin_src elisp
+  (use-package org
+   :config
+   (setq org-todo-keywords
+      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+   (setq org-todo-keyword-faces
+      (quote (("TODO" :foreground "red" :weight bold)
+              ("NEXT" :foreground "blue" :weight bold)
+              ("DONE" :foreground "forest green" :weight bold)
+              ("WAITING" :foreground "orange" :weight bold)
+              ("HOLD" :foreground "magenta" :weight bold)
+              ("CANCELLED" :foreground "forest green" :weight bold)
+              ("MEETING" :foreground "forest green" :weight bold)
+              ("PHONE" :foreground "forest green" :weight bold)))))
+#+end_src
+
+Add tasks and projects to ~org-agenda~:
+#+begin_src elisp
+  (use-package org
+   :config
+   ;; (setq org-agenda-files '())
+   (add-to-list 'org-agenda-files mybase-reactor-tasks-file))
+#+end_src
+
+*** Incubate
+Basic vars: 
+#+begin_src elisp
+  (defvar mybase-reactor-incubate-file (concat mybase-root-dir "Reactor/Incubate/main.org")) 
+#+end_src
+
+*** Shortkeys Summary
+#+begin_src elisp
+(use-package hydra
+  :config
+  (defhydra hydra-mybase-reactor-refiler (global-map "C-c k" :hint nil)
+"
+^Navigate^      ^Refile^          ^Update^        ^Go To^         ^Dired^
+^^^^^^^^^^----------------------------------------------------------------------------------------
+_k_: ↑ previous _m t_: tasks      _T_: todo task  _g t_: tasks    _g p_: Projects
+_j_: ↓ next     _m i_: incubate   _S_: schedule   _g i_: incubate _g j_: Journal
+_c_: archive    _m p_: Projects   _D_: deadline   _g x_: inbox    
+_d_: delete     _m j_: Journal    _R_: rename     _g f_: phone   
+"
+    ("<up>" org-previous-visible-heading)
+    ("<down>" org-next-visible-heading)
+
+    ("k" org-previous-visible-heading)
+    ("j" org-next-visible-heading)
+    ("c" org-archive-subtree-as-completed)
+    ("d" org-cut-subtree)
+
+    ("m t" mybase-refile-to-tasks)
+    ("m i" mybase-refile-to-incubate)
+    ;; ("m r" (mybase-reactor-refile-directly))
+    
+    ("m p" mybase-refile-to-projects)
+    ("m j" mybase-refile-to-journal)
+
+    ("T" org-todo)
+    ("S" org-schedule)
+    ("D" org-deadline)
+    ("R" org-rename-header)
+
+    ("g t" (find-file-other-window mybase-reactor-tasks-file))
+    ("g i" (find-file-other-window mybase-reactor-incubate-file))
+    ("g x" (find-file-other-window mybase-reactor-inbox-file))
+    ("g f" (find-file-other-window mybase-reactor-phone-inbox-file))
+
+    ("g p" (dired mybase-reactor-projects-dir))
+    ("g j" (dired mybase-reactor-journal-dir))
+    
+    ("[\t]" (org-cycle))
+
+    ("s" (org-save-all-org-buffers) "save")
+    ("q" nil "quit")))
+#+end_src
+
+*** Agenda
+#+begin_src elisp
+(use-package org
+  :bind
+  ("<f12>" . org-agenda))
+#+end_src
+
+
+** Databases
+Root directory:
+
+#+begin_src elisp
+  (setq mybase-databases-dir "/home/hermit/MyBase/Databases/Materials")
+#+end_src
+
+Config:
+#+begin_src elisp
+  (use-package general)
+  (use-package calibredb
+    :config
+    (setq sql-sqlite-program "/usr/bin/sqlite3")
+    (setq calibredb-db-dir (expand-file-name "metadata.db" mybase-databases-dir))
+    (setq calibredb-program "/usr/bin/calibredb")
+    (setq calibredb-library-alist '(("/home/hermit/MyBase/Databases/Materials")))
+    (setq calibredb-virtual-library-alist
+          '(("Materials" . "Material")
+            ("AlgorithmPuzzles" . "AlgorithmPuzzle")
+            ("Videos" . "Video")
+            ("Comics" . "Comic")
+            ("Pastimes" . "Pastime")
+            ("NSFW" . "NSFW")))
+    (general-define-key
+     :prefix "C-c"
+     "s d" 'calibredb))
+#+end_src
+
+** Diary
+Root directory:
+#+begin_src elisp
+  (defvar mybase-diary-dir  (concat mybase-root-dir "Diary"))
+#+end_src
+
+Config:
+#+begin_src elisp
+  (use-package org-roam
+    :config
+    (setq org-roam-dailies-directory mybase-diary-dir)
+    (setq org-roam-dailies-capture-templates
+  	'(("d" "note" plain "%?" :if-new
+             (file+head "%<%Y>/%<%Y%02m>/%<%Y%02m%02d>/%<%Y-%02m-%02d>.org" 
+                        "#+TITLE: %<%Y-%02m-%02d>\n#+AUTHOR: hermit\n#+FILETAGS: diary\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <2021-08-01 Sun 15:12:43>\n\n* References\n\n* Intro\n")
+             :unnarrowed t
+             :immediate-finish)))
+  
+    (general-define-key
+     :prefix "C-c f"
+     
+     "t" 'org-roam-dailies-capture-today
+     "f" 'org-roam-dailies-goto-date
+     "c" 'org-roam-dailies-capture-date))
+#+end_src
+
+** Leaves
+Root directory:
+#+begin_src elisp
+  (defvar mybase-leaves-dir  (concat mybase-root-dir "Leaves"))
+#+end_src  
+
+Config:
+#+begin_src elisp
+(use-package org-roam
+  :after org
+  :config
+  (setq org-roam-v2-ack t)
+  (add-hook 'after-init-hook 'org-roam-mode)
+  (setq org-roam-directory mybase-leaves-dir)
+  (setq org-roam-capture-templates
+	'(("n" "note" plain "%?" :if-new
+           (file+head "%<%Y%02m%02d%02H%02M%02S>/main.org" 
+                      "#+TITLE: ${title}\n#+AUTHOR: hermit\n#+FILETAGS: knowledge\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <>\n\n* References\n\n* Intro\n")
+           :unnarrowed t
+           :immediate-finish)))
+
+  (general-define-key
+   :prefix "C-c s"
+   "s" 'org-roam-node-find
+   "c" 'org-roam-capture
+   "i" 'org-roam-node-insert
+   "r" 'org-roam-buffer-toggle
+   "a" 'org-roam-alias-add)
+
+  (setq org-roam-completion-system 'ivy)
+  
+  (org-roam-setup))
+#+end_src
+
+#+begin_src elisp
+(use-package deft
+  :after org
+  :bind
+  ("C-c s f" . deft)
+  :custom
+  (deft-recursive t)
+  (deft-use-filter-string-for-filename t)
+  (deft-default-extension "org")
+  (deft-directory org-roam-directory))
+(use-package time-stamp
+  :config
+  (add-hook 'before-save-hook 'time-stamp)
+  (setq time-stamp-line-limit 10)
+  (setq time-stamp-start "#[+]MODIFIED_TIME:[ 	]+\\\\?[\"<]+")
+  (setq time-stamp-format "%Y-%02m-%02d %3a %02H:%02M:%02S")
+  )
+(defun get-string-from-file (filePath)
+  "Return filePath's file content."
+  (with-temp-buffer
+    (insert-file-contents filePath)
+    (buffer-string)))
+
+(defun mybase-leaves-rename-buffer ()
+  (let ((file (buffer-file-name)))
+    (when (string-prefix-p mybase-leaves-dir file)
+      (let* ((content (get-string-from-file file))
+             (_ (string-match "#\\+TITLE: \\(.*\\)$" content))
+             (title (match-string 1 content)))
+        (rename-buffer (format "☆ %s" title))))))
+
+(use-package org
+  :hook
+  (org-mode . mybase-leaves-rename-buffer))
+
+(defun mybase-leaves-save-update ()
+  (mybase-leaves-rename-buffer))
+
+(add-hook 'before-save-hook 'mybase-leaves-save-update)
+
+;; https://emacs-china.org/t/emacs-builtin-mode/11937/71?u=shadw3002
+(use-package recentf
+  :config
+  (setq recentf-exclude '(
+                          "/home/hermit/MyBase/Leaves/*")))
+#+end_src
+
+** Channels
+#+begin_src elisp
+  (use-package elfeed)
+
+  (use-package elfeed-org
+    :config
+    ;; Initialize elfeed-org
+    ;; This hooks up elfeed-org to read the configuration when elfeed
+    ;; is started with =M-x elfeed=
+    (elfeed-org)
+  
+    ;; Optionally specify a number of files containing elfeed
+    ;; configuration. If not set then the location below is used.
+    ;; Note: The customize interface is also supported.
+    (setq rmh-elfeed-org-files (list "/home/hermit/MyBase/Channels/RSS/main.org")))
+#+end_src
+
+* Programming Language
+
+** Ruby
+#+begin_src elisp
+  ;; Integrate rbenv
+  (use-package rbenv
+    :hook (after-init . global-rbenv-mode)
+    :init (setq rbenv-show-active-ruby-in-modeline nil
+                rbenv-executable "rbenv"))
+
+  ;; YAML mode
+  (use-package yaml-mode)
+
+  ;; Run a Ruby process in a buffer
+  (use-package inf-ruby
+    :hook ((ruby-mode . inf-ruby-minor-mode)
+           (compilation-filter . inf-ruby-auto-enter)))
+
+  ;; Ruby YARD comments
+  (use-package yard-mode
+    :diminish
+    :hook (ruby-mode . yard-mode))
+
+  ;; Ruby refactoring helpers
+  (use-package ruby-refactor
+    :diminish
+    :hook (ruby-mode . ruby-refactor-mode-launch))
+
+  ;; Yet Another RI interface for Emacs
+  (use-package yari
+    :bind (:map ruby-mode-map ([f1] . yari)))
+
+  ;; RSpec
+  (use-package rspec-mode
+    :diminish
+    :commands rspec-install-snippets
+    :hook (dired-mode . rspec-dired-mode)
+    :config (with-eval-after-load 'yasnippet
+              (rspec-install-snippets)))
+#+end_src
+
+** Rust
+#+begin_src elisp
+  (use-package rustic)
+
+  (use-package rust-playground)
+#+end_src
+
+** Haskell
+#+begin_src elisp
+  ;; (require 'haskell)
+
+#+end_src
+
+* Formats
+
+** Ebook
+#+begin_src elisp
+  (use-package nov
+    :config
+    (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+
+  ;; (with-eval-after-load 'shr ; lazy load is very important, it can save you a lot of boot up time
+  ;;   (require 'shrface)
+  ;;   (shrface-basic) ; enable shrfaces, must be called before loading eww/dash-docs/nov.el
+  ;;   (shrface-trial) ; enable shrface experimental face(s), must be called before loading eww/dash-docs/nov.el
+  ;;   (setq shrface-href-versatile t) ; enable versatile URL faces support
+  ;;                                   ; (http/https/ftp/file/mailto/other), if
+  ;;                                   ; `shrface-href-versatile' is nil, default
+  ;;                                   ; face `shrface-href-face' would be used.
+  ;;   (setq shrface-toggle-bullets nil) ; Set t if you do not like headline bullets
+
+  ;;   ;; eww support
+  ;;   (with-eval-after-load 'eww
+  ;;     (add-hook 'eww-after-render-hook 'shrface-mode))
+
+  ;;   ;; nov support
+  ;;   (with-eval-after-load 'nov
+  ;;     (setq nov-shr-rendering-functions '((img . nov-render-img) (title . nov-render-title))) ; reset nov-shr-rendering-functions, in case of the list get bigger and bigger
+  ;;     (setq nov-shr-rendering-functions (append nov-shr-rendering-functions shr-external-rendering-functions))
+  ;;     (add-hook 'nov-mode-hook 'shrface-mode))
+
+  ;;   ;; mu4e support
+  ;;   (with-eval-after-load 'mu4e
+  ;;     (add-hook 'mu4e-view-mode-hook 'shrface-mode)))
+
+  ;; (require 'openwith)
+  ;; (openwith-mode t)
+  ;; (setq openwith-associations '(("\\.pdf\\'" "okular" (file))))
+#+end_src
+
+* Tools
+
+** http
+#+begin_src elisp
+  (use-package ob-http)
+#+end_src
+
+** dired
+#+begin_src elisp
+  ;; (use-package dired
+  ;;   :init
+  ;;   ;; Always delete and copy recursively
+  ;;   (setq dired-recursive-deletes 'always
+  ;;         dired-recursive-copies 'always
+  ;;         dired-dwim-target t)
+
+  ;;   :config
+  ;;   (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
+  ;;   ;; 自动猜测目标路径
+  ;;   (setq dired-dwim-target t)
+  ;; 
+  ;;   ;; 让dired mode始终占据一个缓冲区
+  ;;   (put 'dired-find-alternate-file 'disabled nil)
+
+  ;; (use-package dired-ranger
+  ;;   :ensure t
+  ;;   :bind (:map dired-mode-map
+  ;;               ("W" . dired-ranger-copy)
+  ;;               ("X" . dired-ranger-move)
+  ;;               ("Y" . dired-ranger-paste)))  
+
+  ;;   ;; dired 高亮
+  ;;   (use-package diredfl
+  ;;     :ensure t
+  ;;     :config (diredfl-global-mode t))
+
+  ;;   (use-package all-the-icons-dired
+  ;;     :ensure t
+  ;;     :config
+  ;;     (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+
+
+  ;; 
+  ;;   )
+#+end_src
+
+** ob-go
+#+begin_src elisp
+  (use-package ob-go)
+#+end_src
+
+** 
+
