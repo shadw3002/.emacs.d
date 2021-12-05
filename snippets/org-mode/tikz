@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: tikz
+# key: tikz_
+# --
+#+LATEX_HEADER: \usepackage{tikz}

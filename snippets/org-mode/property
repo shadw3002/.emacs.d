@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: sourceblock
+# key: <p
+# --
+:PROPERTIES: 
+$0
+:END:

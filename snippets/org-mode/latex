@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: srclatex
+# key: ltx_
+# --
+#+begin_src latex :file ${1:filename}.png :results output silent
+$0
+#+end_src
+
+#+attr_org: :width ${2:size}px
+[[file:$1.png]]

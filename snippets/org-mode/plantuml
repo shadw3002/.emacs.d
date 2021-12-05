@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: plantuml
+# key: plt_
+# --
+#+begin_src plantuml :file ${1:filename}.png :cmdline -charset UTF-8 :results output silent
+$0
+#+end_src
+
+#+attr_org: :width ${2:size}px
+[[file:$1.png]]

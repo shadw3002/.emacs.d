@@ -255,6 +255,12 @@ highlights:
                       :size 21.0)))))
 #+end_src
 
+** Line Space
+Improve the readability by increasing line spacing.
+#+begin_src elisp
+  (setq-default line-spacing 0.1)
+#+end_src
+
 
 * Basic UX
 
@@ -308,26 +314,14 @@ Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552
 #+end_src
 
 
-* Shorekey
-#+begin_src elisp
-  ;; 方便定义快捷键
-  (use-package general
-    :ensure t)
+* Basic Shortkey
+** Shortkey Hint
+[[https://github.com/justbur/emacs-which-key][which-key]] displays available keybindings in popup, the displaying has 0.3 second idle delay. 
 
-  ;; 定义临时快捷键 state
-  (use-package hydra
-    :commands (hydra-default-pre
-               hydra-keyboard-quit
-               hydra--call-interactively-remap-maybe
-               hydra-show-hint
-               hydra-set-transient-map))
-
-  ;; pretty-hydra provides a macro pretty-hydra-define to make it easy to create hydras with a pretty table layout with some other bells and whistles
-  (use-package pretty-hydra)
-
-#+end_src
-
-[[https://github.com/justbur/emacs-which-key][which-key]] displays available keybindings in popup.
+Besides, use ~C-h~ to get some useful information:
+- ~C-h v~ :: describe variable, based on focus or input
+- ~C-h f~ :: describe function, based on focus or input
+- ~C-h b~ :: describe shorkey binding
 
 #+begin_src elisp
 (use-package which-key
@@ -341,10 +335,32 @@ Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552
   (which-key-side-window-location 'bottom)
   (which-key-show-docstrings t)
   (which-key-max-display-columns 2)
-  (which-key-show-prefix nil)
+  (which-key-show-prefix t)
   (which-key-side-window-max-height 8)
   (which-key-max-description-length 80))
 #+end_src
+
+** Define Shortkey
+[[https://github.com/noctuid/general.el][general.el]] provides a more convenient method for binding keys in emacs (for both evil and non-evil users). 
+
+#+begin_src elisp
+  (use-package general)
+#+end_src
+
+[[https://github.com/abo-abo/hydra][Hydra]] is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra.
+
+#+begin_src elisp
+  (use-package hydra
+    :commands (hydra-default-pre
+               hydra-keyboard-quit
+               hydra--call-interactively-remap-maybe
+               hydra-show-hint
+               hydra-set-transient-map))
+
+  ;; pretty-hydra provides a macro pretty-hydra-define to make it easy to create hydras with a pretty table layout with some other bells and whistles
+  (use-package pretty-hydra)
+#+end_src
+
 
 * Snippets
 #+begin_src elisp
@@ -354,9 +370,13 @@ Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552
     :config
     (setq yas-snippet-dirs
           '("~/.emacs.d/snippets"
-            ))
-    )
+            )))
+
+  ;; (use-package yasnippet-snippets)
 #+end_src
+
+
+
 
 * Tree
 #+begin_src elisp
@@ -522,61 +542,74 @@ Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552
 
 *** Basic
 #+begin_src elisp
-(use-package evil
-  :bind
-  (:map evil-normal-state-map
-	("j"   . evil-next-visual-line)
-	("k"   . evil-previous-visual-line)
-	;; ("u"   . undo-fu-only-undo)
-	;; ("C-r" . undo-fu-only-redo)
-   :map evil-insert-state-map
-	("C-v" . evil-visual-block)
-   :map evil-motion-state-map
-	("RET" . nil))
-  :init
-  (setq evil-want-keybinding nil)
-  (setq evil-emacs-state-cursor 'bar)
-  :hook
-  (after-init . evil-mode)
-  :config
-
-  ;; https://stackoverflow.com/a/10166400/9984029
-  ;; Make ESC cancel selection in insert mode.
-  (defun evil-escape-cancel-selection-first ()
-    "In evil insert state, make ESC to cancel selection first, then press ESC to go to normal state."
-    (interactive)
-    (if (and delete-selection-mode transient-mark-mode mark-active)
-	(setq deactivate-mark  t)
-      (evil-normal-state)))
-  (define-key evil-insert-state-map [escape] 'evil-escape-cancel-selection-first)
-    ;; Consist keybinding for text movements.
-  (define-key evil-normal-state-map "\C-e" 'end-of-line)
-  (define-key evil-insert-state-map "\C-e" 'end-of-line)
-  (define-key evil-visual-state-map "\C-e" 'end-of-line)
-  (define-key evil-motion-state-map "\C-e" 'end-of-line)
-  (define-key evil-normal-state-map "\C-f" 'forward-char)
-  (define-key evil-insert-state-map "\C-f" 'forward-char)
-  (define-key evil-insert-state-map "\C-f" 'forward-char)
-  (define-key evil-normal-state-map "\C-b" 'backward-char)
-  (define-key evil-insert-state-map "\C-b" 'backward-char)
-  (define-key evil-visual-state-map "\C-b" 'backward-char)
-  (define-key evil-normal-state-map "\C-d" 'delete-char)
-  (define-key evil-insert-state-map "\C-d" 'delete-char)
-  (define-key evil-visual-state-map "\C-d" 'delete-char)
-  (define-key evil-normal-state-map "\C-n" 'next-line)
-  (define-key evil-insert-state-map "\C-n" 'next-line)
-  (define-key evil-visual-state-map "\C-n" 'next-line)
-  (define-key evil-normal-state-map "\C-p" 'previous-line)
-  (define-key evil-insert-state-map "\C-p" 'previous-line)
-  (define-key evil-visual-state-map "\C-p" 'previous-line)
-  :custom
-  ;; Do not echo the state in minibuffer.
-  (evil-echo-state nil)
-  ;; Use native keybindings on insert state.
-  (evil-disable-insert-state-bindings t)
-  ;; Records changes to separate undo instead of a big one in insert state.
-  (evil-want-fine-undo t))
+  (use-package evil
+    :bind
+    (:map evil-normal-state-map
+    ("j"   . evil-next-visual-line)
+    ("k"   . evil-previous-visual-line)
+     :map evil-insert-state-map
+    ("C-v" . evil-visual-block)
+     :map evil-motion-state-map
+    ("RET" . nil))
+    :init
+    (setq evil-want-keybinding nil)
+    (setq evil-emacs-state-cursor 'bar)
+    :hook
+    (after-init . evil-mode)
+    :config
+    ;; https://stackoverflow.com/a/10166400/9984029
+    ;; Make ESC cancel selection in insert mode.
+    (defun evil-escape-cancel-selection-first ()
+      "In evil insert state, make ESC to cancel selection first, then press ESC to go to normal state."
+      (interactive)
+      (if (and delete-selection-mode transient-mark-mode mark-active)
+    (setq deactivate-mark  t)
+        (evil-normal-state)))
+    (define-key evil-insert-state-map [escape] 'evil-escape-cancel-selection-first)
+      ;; Consist keybinding for text movements.
+    (define-key evil-normal-state-map "\C-e" 'end-of-line)
+    (define-key evil-insert-state-map "\C-e" 'end-of-line)
+    (define-key evil-visual-state-map "\C-e" 'end-of-line)
+    (define-key evil-motion-state-map "\C-e" 'end-of-line)
+    (define-key evil-normal-state-map "\C-f" 'forward-char)
+    (define-key evil-insert-state-map "\C-f" 'forward-char)
+    (define-key evil-insert-state-map "\C-f" 'forward-char)
+    (define-key evil-normal-state-map "\C-b" 'backward-char)
+    (define-key evil-insert-state-map "\C-b" 'backward-char)
+    (define-key evil-visual-state-map "\C-b" 'backward-char)
+    (define-key evil-normal-state-map "\C-d" 'delete-char)
+    (define-key evil-insert-state-map "\C-d" 'delete-char)
+    (define-key evil-visual-state-map "\C-d" 'delete-char)
+    (define-key evil-normal-state-map "\C-n" 'next-line)
+    (define-key evil-insert-state-map "\C-n" 'next-line)
+    (define-key evil-visual-state-map "\C-n" 'next-line)
+    (define-key evil-normal-state-map "\C-p" 'previous-line)
+    (define-key evil-insert-state-map "\C-p" 'previous-line)
+    (define-key evil-visual-state-map "\C-p" 'previous-line)
+    :custom
+    ;; Do not echo the state in minibuffer.
+    (evil-echo-state nil)
+    ;; Use native keybindings on insert state.
+    (evil-disable-insert-state-bindings t)
+    ;; Records changes to separate undo instead of a big one in insert state.
+    (evil-want-fine-undo t))
 #+end_src
+
+*** Compli with Other Modes
+[[https://github.com/emacs-evil/evil-collection][evil-collection]], which provides evil-friendly bindings for many modes.
+#+begin_src elisp
+  (use-package evil-collection
+    :after evil
+    :config
+    (setq evil-collection-mode-list '(dired
+                                      magit
+                                      which-key
+                                      nov
+                                      vterm
+                                      ))
+    (evil-collection-init))
+#+end_src
+
 
 ** File Locking
 No need for =~= files when editing. 
@@ -589,9 +622,10 @@ Indent with 2 whitespaces, ues spaces instead of tabs.
 #+begin_src elisp
   (setq-default tab-width 2)
   (setq-default indent-tabs-mode nil)
+  (setq indent-line-function 'insert-tab)
 #+end_src
 
-** Save Editing Places
+** Save Cursor Position
 #+begin_src elisp
 (use-package saveplace
   :hook (after-init . save-place-mode)
@@ -600,9 +634,9 @@ Indent with 2 whitespaces, ues spaces instead of tabs.
   (setq save-place-file (concat user-emacs-directory "places")))
 #+end_src
 
-** Disable Auto Saving
+** Auto Save File
 #+begin_src elisp
-  (setq-default auto-save nil)
+  (setq-default auto-save t)
 #+end_src
 
 ** Backups
@@ -623,7 +657,7 @@ Record 64 newest recent opened files.
 ** Pairs
 Auto pair brackets, quotes etc:
 #+begin_src elisp
-  (electric-pair-mode 1)
+  ;; (electric-pair-mode 1)
 #+end_src
 
 ** Auto Creating Directory
@@ -689,6 +723,24 @@ Auto pair brackets, quotes etc:
           rime-show-candidate 'posframe))
 #+end_src
 
+** Overwrite Selection On Pasting
+#+begin_src elisp
+  (delete-selection-mode 1)
+#+end_src
+
+** Undo
+Increase undo limit.
+#+begin_src elisp
+  ;; default is 160000
+  (setq undo-limit 800000)
+  ;; default is 240000
+  (setq undo-strong-limit 12000000)
+  ;; default is 24000000
+  (setq undo-outer-limit 120000000)
+#+end_src
+
+
+
 
 * Writing Languages
 ** Org Mode
@@ -706,11 +758,66 @@ Auto pair brackets, quotes etc:
     (set-face-attribute 'org-block-begin-line nil :slant 'italic :inherit 'fixed-pitch)
     (setq org-src-fontify-natively t))
 #+end_src
-*** Beautify
+*** Org Superstar
+[[https://github.com/integral-dw/org-superstar-mode][Org Superstar]] prettifies headings and plain lists in Org mode.
 #+begin_src elisp
+  (use-package org-superstar
+    :hook
+    (org-mode . org-superstar-mode)
+    :config
+    (setq org-hide-leading-stars t)
+    :custom
+    ;; Change org headlines' style to ›.
+    (org-superstar-headline-bullets-list '("›"))
+    ;; Change org unordered list styles.
+    (org-superstar-prettify-item-bullets t)
+    (org-superstar-item-bullet-alist '((?* . ?•)
+                                       (?+ . ?•)
+                                       (?- . ?•))))
+#+end_src
+*** Org Appear
+[[https://github.com/awth13/org-appear][Org Appear]] toggles visibility of hidden Org mode element parts upon entering and leaving an element.
 
+#+begin_src elisp
+  (use-package org-appear
+    :hook
+    (org-mode . org-appear-mode)
+    :init
+    ;; Instant toggle raw format on insert mode, 1 second delay on normal mode.
+    (add-hook 'evil-insert-state-entry-hook (lambda() (setq org-appear-delay 0)))
+    (add-hook 'evil-normal-state-entry-hook (lambda() (setq org-appear-delay 1)))
+    :config
+    ;; Hide emphasis makers.
+    (setq org-hide-emphasis-markers t)
+    ;; Prettify things like \pi, sub/super script.
+    (setq org-pretty-entities t)
+    ;; Hide keywords like #+TITLE:
+    (setq org-hidden-keywords '(title email date author))
+    :custom
+    (org-appear-delay 0)
+    (org-appear-autolinks t)
+    (org-appear-autoentities t)
+    (org-appear-autokeywords t)
+    (org-appear-autosubmarkers t))
+#+end_src
+*** Xenops
+[[https://github.com/dandavison/xenops][xenops]] is an editing environment for LaTeX mathematical documents with async rendering.
+
+#+begin_src elisp
+  (use-package xenops
+    :hook
+    (org-mode . xenops-mode)
+    :config
+    (setq xenops-math-image-scale-factor 1.8))
 #+end_src
 
+$a$ $a+b$ test
+
+$$
+a=b+c
+$$
+
+$what$
 
 
 *** Images
@@ -728,6 +835,21 @@ Auto pair brackets, quotes etc:
     :prefix "C-c"
     "i" 'org-toggle-inline-images)
 #+end_src
+
+#+begin_src elisp
+  (use-package org-download
+    :config
+    (setq org-download-image-dir "images")
+    (setq org-download-display-inline-images nil)
+    (setq org-download-image-org-width 150))
+#+end_src
+
+*** Table
+#+begin_src elisp
+  (use-package table)
+#+end_src
+
+
 *** Latex
 #+begin_src elisp
   (general-define-key
