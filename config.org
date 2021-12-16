@@ -56,6 +56,7 @@ Disable bidirectional text rendering for a modest performance boost. Of course, 
 #+end_src
 
 * Package Management
+
 ** Load Build-in Package
 #+begin_src elisp
   (require 'package)
@@ -67,7 +68,30 @@ Disable bidirectional text rendering for a modest performance boost. Of course, 
       '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
         ("org-cn"   . "http://elpa.zilongshanren.com/org/")
         ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))
+
+  ;; (setq package-archives
+  ;;     '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
+  ;;       ("org-cn"   . "http://elpa.zilongshanren.com/org/")
+  ;;       ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))
 #+end_src
+
+** Add Load Path
+#+begin_src elisp
+  (defun update-load-path (&rest _)
+    "Update `load-path'."
+    (dolist (dir '("site-lisp" "lisp"))
+      (push (expand-file-name dir user-emacs-directory) load-path)))
+
+  (defun add-subdirs-to-load-path (&rest _)
+    "Add subdirectories to `load-path'."
+    (dolist (dir '("site-lisp"))
+      (let ((default-directory
+                (expand-file-name dir user-emacs-directory)))
+          (normal-top-level-add-subdirs-to-load-path))))
+
+  (add-subdirs-to-load-path)
+#+end_src
+
 
 ** Initialize
 #+begin_src elisp
@@ -805,20 +829,11 @@ Increase undo limit.
 
 #+begin_src elisp
   (use-package xenops
-    :hook
-    (org-mode . xenops-mode)
-    :config
-    (setq xenops-math-image-scale-factor 1.8))
+   :hook
+   (org-mode . xenops-mode)
+   :config
+   (setq xenops-math-image-scale-factor 1.8))
 #+end_src
-
-$a$ $a+b$ test
-
-$$
-a=b+c
-$$
-
-$what$
-
 
 *** Images
 #+begin_src elisp
@@ -849,6 +864,13 @@ $what$
   (use-package table)
 #+end_src
 
+*** Table Aligned
+#+begin_src elisp
+  (use-package valign
+    :hook (org-mode . valign-mode)
+    :config
+    (setq valign-fancy-bar t))
+#+end_src
 
 *** Latex
 #+begin_src elisp
@@ -958,6 +980,16 @@ $what$
 #+begin_src elisp
   (defvar mybase-root-dir "/home/hermit/MyBase/")
 #+end_src
+
+** Blog
+#+begin_src elisp
+  (defvar mybase-blog-dir (concat mybase-root-dir "Blog"))
+
+  (require 'ox)
+  (use-package ox-hugo
+    :after ox)
+#+end_src
+
 
 ** Reactor
 *** Util
@@ -1170,6 +1202,31 @@ Config:
     (general-define-key
      :prefix "C-c"
      "s d" 'calibredb))
+
+
+  (defun calibredb-org-link-copy ()
+    "Copy the marked items as calibredb org links."
+    (interactive)
+    (let ((candidates (calibredb-find-marked-candidates)))
+      (unless candidates
+        (setq candidates (calibredb-find-candidate-at-point)))
+      (kill-new
+       (with-temp-buffer
+         (dolist (cand candidates)
+           (let ((id (calibredb-getattr cand :id))
+                 (path (calibredb-getattr cand :file-path))
+                 (title (calibredb-getattr cand :book-title))
+                 (author (calibredb-getattr cand :author-sort)))
+             (insert (format "[[calibredb:%s][《%s》by %s]]\n"
+                             id title author))
+             (message "Copied: %s - \"%s\" as calibredb org link." id title)))
+         (buffer-string)))
+      ;; remove overlays and text properties
+      (let* ((beg (point-min))
+             (end (point-max))
+             (inhibit-read-only t))
+        (remove-overlays beg end)
+        (remove-text-properties beg end '(calibredb-mark nil)))))
 #+end_src
 
 ** Diary
@@ -1186,7 +1243,7 @@ Config:
     (setq org-roam-dailies-capture-templates
   	'(("d" "note" plain "%?" :if-new
              (file+head "%<%Y>/%<%Y%02m>/%<%Y%02m%02d>/%<%Y-%02m-%02d>.org" 
-                        "#+TITLE: %<%Y-%02m-%02d>\n#+AUTHOR: hermit\n#+FILETAGS: diary\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <2021-08-01 Sun 15:12:43>\n\n* References\n\n* Intro\n")
+                        "#+TITLE: %<%Y-%02m-%02d>\n#+AUTHOR: hermit\n#+FILETAGS: diary\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <2021-08-01 Sun 15:12:43>\n\n* 简介\n\n* 参考资料\n")
              :unnarrowed t
              :immediate-finish)))
   
@@ -1215,7 +1272,7 @@ Config:
   (setq org-roam-capture-templates
 	'(("n" "note" plain "%?" :if-new
            (file+head "%<%Y%02m%02d%02H%02M%02S>/main.org" 
-                      "#+TITLE: ${title}\n#+AUTHOR: hermit\n#+FILETAGS: knowledge\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <>\n\n* References\n\n* Intro\n")
+                      "#+TITLE: ${title}\n#+AUTHOR: hermit\n#+FILETAGS: knowledge\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <>\n\n* 简介\n\n* 参考资料\n")
            :unnarrowed t
            :immediate-finish)))
 
