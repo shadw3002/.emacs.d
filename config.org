@@ -197,9 +197,7 @@ Disable cursor in inactive window.
 ** Scroll Bar 
 Disable scroll bar.
 #+begin_src elisp
-  (with-eval-after-load "scroll-bar"
-    (if exordium-scroll-bar
-        (scroll-bar-mode 0)))
+  (scroll-bar-mode 0)
 #+end_src
 
 ** Modeline
@@ -1186,7 +1184,7 @@ _d_: delete     _m j_: Journal    _R_: rename     _g f_: phone
 Root directory:
 
 #+begin_src elisp
-  (setq mybase-databases-dir "/home/hermit/MyBase/Databases/Materials")
+  (setq mybase-databases-dir (concat mybase-root-dir "Databases/Materials"))
 #+end_src
 
 Config:
@@ -1197,7 +1195,7 @@ Config:
     (setq sql-sqlite-program "/usr/bin/sqlite3")
     (setq calibredb-db-dir (expand-file-name "metadata.db" mybase-databases-dir))
     (setq calibredb-program "/usr/bin/calibredb")
-    (setq calibredb-library-alist '(("/home/hermit/MyBase/Databases/Materials")))
+    (setq calibredb-library-alist '(((concat mybase-root-dir "Databases/Materials"))))
     (setq calibredb-virtual-library-alist
           '(("Materials" . "Material")
             ("AlgorithmPuzzles" . "AlgorithmPuzzle")
@@ -1338,8 +1336,8 @@ Config:
 ;; https://emacs-china.org/t/emacs-builtin-mode/11937/71?u=shadw3002
 (use-package recentf
   :config
-  (setq recentf-exclude '(
-                          "/home/hermit/MyBase/Leaves/*")))
+  (setq recentf-exclude '((concat mybase-root-dir "Leaves/*")
+                          )))
 #+end_src
 
 ** Channels
@@ -1356,7 +1354,7 @@ Config:
     ;; Optionally specify a number of files containing elfeed
     ;; configuration. If not set then the location below is used.
     ;; Note: The customize interface is also supported.
-    (setq rmh-elfeed-org-files (list "/home/hermit/MyBase/Channels/RSS/main.org")))
+    (setq rmh-elfeed-org-files (list (concat mybase-root-dir "Channels/RSS/main.org"))))
 #+end_src
 
 * Programming Language
