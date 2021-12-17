@@ -828,11 +828,15 @@ Increase undo limit.
 [[https://github.com/dandavison/xenops][xenops]] is an editing environment for LaTeX mathematical documents with async rendering.
 
 #+begin_src elisp
-  (use-package xenops
-   :hook
-   (org-mode . xenops-mode)
-   :config
-   (setq xenops-math-image-scale-factor 1.8))
+  (if (display-graphic-p)
+    (progn
+      (use-package xenops
+       :hook
+       (org-mode . xenops-mode)
+       :config
+       (setq xenops-math-image-scale-factor 1.8))))
+
+
 #+end_src
 
 *** Images
