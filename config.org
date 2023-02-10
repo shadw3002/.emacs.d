@@ -6,11 +6,7 @@ In order to enable lexical binding in the config, this must be the first line of
   ;;; -*- lexical-binding: t -*-
 #+end_src
 
-* Intro
-#+begin_src elisp
-#+end_src
-
-* Optimizations
+* Performance Optimizations
 ** Emacs GC
 The default value of Emacs's GC gabage collection threshold is quite small (800 KiB)
 
@@ -38,8 +34,10 @@ ref: http://akrl.sdf.org/#org2a987f7
                                     )))
 #+end_src
 
+By doing so, we can speed up the initialization. 
+
 ** InterProcess Communication
-Increase the amount of data from the process:, `lsp-mode' gains: 
+Increase the amount of data from the process:, 'lsp-mode' gains: 
 
 #+begin_src elisp
   (setq read-process-output-max (* 1024 1024))
@@ -56,26 +54,26 @@ Disable bidirectional text rendering for a modest performance boost. Of course, 
 #+end_src
 
 * Package Management
-
 ** Load Build-in Package
 #+begin_src elisp
   (require 'package)
 #+end_src
 
 ** Config Package Archives
+from: https://mirrors.tuna.tsinghua.edu.cn/help/elpa/
+
 #+begin_src elisp
   (setq package-archives
-      '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
-        ("org-cn"   . "http://elpa.zilongshanren.com/org/")
-        ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))
-
-  ;; (setq package-archives
-  ;;     '(("melpa-cn" . "http://elpa.zilongshanren.com/melpa/")
-  ;;       ("org-cn"   . "http://elpa.zilongshanren.com/org/")
-  ;;       ("gnu-cn"   . "http://elpa.zilongshanren.com/gnu/")))
+      '(("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+        ("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
+        ("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")))
 #+end_src
 
 ** Add Load Path
+Here provide two functions, but we only use ~add-subdirs-to-load-path~ , which will add folders recursively in ~site-lisp~.
+
+By design, we save packages wrote by ourselves and packages which is not in mepla here. 
+
 #+begin_src elisp
   (defun update-load-path (&rest _)
     "Update `load-path'."
@@ -88,10 +86,9 @@ Disable bidirectional text rendering for a modest performance boost. Of course, 
       (let ((default-directory
                 (expand-file-name dir user-emacs-directory)))
           (normal-top-level-add-subdirs-to-load-path))))
-
+  (update-load-path)
   (add-subdirs-to-load-path)
 #+end_src
-
 
 ** Initialize
 #+begin_src elisp
@@ -127,36 +124,43 @@ If you want to keep your packages updated automatically, one option is to use ~a
 #+end_src
 
 * Basic UI
-
 ** Icons
+https://github.com/domtronn/all-the-icons.el
+
+A utility package to collect various Icon Fonts and propertize them within Emacs. 
+
 #+begin_src elisp
-  (use-package all-the-icons)
+  (use-package all-the-icons
+    :if (display-graphic-p))
 #+end_src
 
 ** Color Theme
+https://github.com/protesilaos/modus-themes
+
+Highly accessible themes for GNU Emacs, conforming with the highest standard for colour contrast between background and foreground values.
+
 #+begin_src elisp
   (use-package modus-themes
-    ;; :ensure
     :init
-    ;; Add all your customizations prior to loading the themes
-    (setq modus-themes-org-blocks 'gray-background
-          modus-themes-bold-constructs t
-          modus-themes-italic-constructs t
-          modus-themes-mixed-fonts t
-          modus-themes-links '(faint)
-          modus-themes-headings '((t . (monochrome semibold)))
-          modus-themes-scale-headings t
-          modus-themes-scale-1 1.15
-          modus-themes-scale-2 1.20
-          modus-themes-scale-3 1.25
-          modus-themes-scale-4 1.30
-          modus-themes-scale-title 2.0
-          modus-themes-scale-small 0.9
-          modus-themes-variable-pitch-ui t
-          modus-themes-variable-pitch-headings t)
-  
-    ;; Load the theme files before enabling a theme
     (modus-themes-load-themes)
+    :custom
+    (modus-themes-links '(neutral-underline no-color))
+    (modus-themes-org-blocks 'gray-background)
+    (modus-themes-box-buttons '(variable-pitch 0.9))
+    (modus-themes-prompts '(intense background))
+    (modus-themes-bold-constructs t)
+    (modus-themes-italic-constructs t)
+    (modus-themes-mixed-fonts t)
+    (modus-themes-headings '((t . (monochrome semibold))))
+    (modus-themes-scale-headings t)
+    (modus-themes-scale-1 1.15)
+    (modus-themes-scale-2 1.20)
+    (modus-themes-scale-3 1.25)
+    (modus-themes-scale-4 1.30)
+    (modus-themes-scale-title 2.0)
+    (modus-themes-scale-small 0.9)
+    (modus-themes-variable-pitch-ui t)
+    (modus-themes-variable-pitch-headings t)
     :config
     ;; Load the theme of your choice:
     (modus-themes-load-operandi)
@@ -192,7 +196,6 @@ Disable cursor in inactive window.
   (set-display-table-slot standard-display-table 'wrap
                         (make-glyph-code ?↩ 'fallback)))
 #+end_src
-
 
 ** Scroll Bar 
 Disable scroll bar.
@@ -237,7 +240,6 @@ highlights:
     :hook (prog-mode . rainbow-delimiters-mode))
 #+end_src
 
-
 ** Line Number
 #+begin_src elisp
   ;; show line number
@@ -273,7 +275,7 @@ highlights:
           (set-fontset-font
            (frame-parameter nil 'font)
            charset
-           (font-spec :name "-ADBE-Source Han Sans CN Medium-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1"
+           (font-spec :name "-ADBE-Source Han Sans CN M-normal-normal-normal-*-*-*-*-*-*-0-iso10646-1"
                       :weight 'normal
                       :slant 'normal
                       :size 21.0)))))
@@ -285,9 +287,7 @@ Improve the readability by increasing line spacing.
   (setq-default line-spacing 0.1)
 #+end_src
 
-
 * Basic UX
-
 ** yes or no
 Ask ~y~ or ~n~ instead of ~yes~ or ~no~. Use ~return~ to act ~y~.
 #+begin_src elisp
@@ -337,228 +337,31 @@ Disable unhelpful mesages in minibuffer. https://superuser.com/a/1025827/1114552
   (fset 'display-startup-echo-area-message 'ignore)
 #+end_src
 
+** Layout
 
-* Basic Shortkey
-** Shortkey Hint
-[[https://github.com/justbur/emacs-which-key][which-key]] displays available keybindings in popup, the displaying has 0.3 second idle delay. 
-
-Besides, use ~C-h~ to get some useful information:
-- ~C-h v~ :: describe variable, based on focus or input
-- ~C-h f~ :: describe function, based on focus or input
-- ~C-h b~ :: describe shorkey binding
+*** Zoom
+https://github.com/cyrus-and/zoom
 
 #+begin_src elisp
-(use-package which-key
-  :bind
-  (:map help-map ("C-h" . which-key-C-h-dispatch))
-  :hook
-  (after-init . which-key-mode)
-  :custom
-  (which-key-idle-delay 0.3)
-  (which-key-popup-type 'side-window)
-  (which-key-side-window-location 'bottom)
-  (which-key-show-docstrings t)
-  (which-key-max-display-columns 2)
-  (which-key-show-prefix t)
-  (which-key-side-window-max-height 8)
-  (which-key-max-description-length 80))
-#+end_src
-
-** Define Shortkey
-[[https://github.com/noctuid/general.el][general.el]] provides a more convenient method for binding keys in emacs (for both evil and non-evil users). 
-
-#+begin_src elisp
-  (use-package general)
-#+end_src
-
-[[https://github.com/abo-abo/hydra][Hydra]] is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra.
-
-#+begin_src elisp
-  (use-package hydra
-    :commands (hydra-default-pre
-               hydra-keyboard-quit
-               hydra--call-interactively-remap-maybe
-               hydra-show-hint
-               hydra-set-transient-map))
-
-  ;; pretty-hydra provides a macro pretty-hydra-define to make it easy to create hydras with a pretty table layout with some other bells and whistles
-  (use-package pretty-hydra)
-#+end_src
-
-
-* Snippets
-#+begin_src elisp
-  (use-package yasnippet
-    :diminish yas-minor-mode
-    :hook (after-init . yas-global-mode)
+  (use-package zoom
     :config
-    (setq yas-snippet-dirs
-          '("~/.emacs.d/snippets"
-            )))
 
-  ;; (use-package yasnippet-snippets)
+  (custom-set-variables
+     '(zoom-mode t))
+    (defun size-callback ()
+      (cond ((> (frame-pixel-width) 1280) '(90 . 0.75))
+            (t                            '(0.5 . 0.5))))
+    (custom-set-variables
+     '(zoom-size 'size-callback))
+    (custom-set-variables
+     '(zoom-ignored-major-modes '(dired-mode markdown-mode))
+     '(zoom-ignored-buffer-names '("zoom.el" "init.el"))
+     '(zoom-ignored-buffer-name-regexps '("^*calc"))
+     '(zoom-ignore-predicates '((lambda () (> (count-lines (point-min) (point-max)) 20)))))
+    )
 #+end_src
 
 
-
-
-* Tree
-#+begin_src elisp
-  (use-package treemacs
-    :ensure t
-    :defer t
-    :init
-    (with-eval-after-load 'winum
-      (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-    :config
-    (progn
-      (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
-            treemacs-deferred-git-apply-delay      0.5
-            treemacs-display-in-side-window        t
-            treemacs-eldoc-display                 t
-            treemacs-file-event-delay              5000
-            treemacs-file-follow-delay             0.2
-            treemacs-follow-after-init             t
-            treemacs-git-command-pipe              ""
-            treemacs-goto-tag-strategy             'refetch-index
-            treemacs-indentation                   2
-            treemacs-indentation-string            " "
-            treemacs-is-never-other-window         nil
-            treemacs-max-git-entries               5000
-            treemacs-missing-project-action        'ask
-            treemacs-no-png-images                 nil
-            treemacs-no-delete-other-windows       t
-            treemacs-project-follow-cleanup        nil
-            treemacs-persist-file                  (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-            treemacs-position                      'left
-            treemacs-recenter-distance             0.1
-            treemacs-recenter-after-file-follow    nil
-            treemacs-recenter-after-tag-follow     nil
-            treemacs-recenter-after-project-jump   'always
-            treemacs-recenter-after-project-expand 'on-distance
-            treemacs-show-cursor                   nil
-            treemacs-show-hidden-files             t
-            treemacs-silent-filewatch              nil
-            treemacs-silent-refresh                nil
-            treemacs-sorting                       'alphabetic-desc
-            treemacs-space-between-root-nodes      t
-            treemacs-tag-follow-cleanup            t
-            treemacs-tag-follow-delay              1.5
-            treemacs-width                         35)
-
-      ;; The default width and height of the icons is 22 pixels. If you are
-      ;; using a Hi-DPI display, uncomment this to double the icon size.
-      ;;(treemacs-resize-icons 44)
-
-      (treemacs-follow-mode t)
-      (treemacs-filewatch-mode t)
-      (treemacs-fringe-indicator-mode t)
-      (pcase (cons (not (null (executable-find "git")))
-                   (not (null treemacs-python-executable)))
-        (`(t . t)
-         (treemacs-git-mode 'deferred))
-        (`(t . _)
-         (treemacs-git-mode 'simple))))
-    :bind
-    (:map global-map
-          ("M-0"       . treemacs-select-window)
-          ("C-x t 1"   . treemacs-delete-other-windows)
-          ("C-x t t"   . treemacs)
-          ("C-x t B"   . treemacs-bookmark)
-          ("C-x t C-t" . treemacs-find-file)
-          ("C-x t M-t" . treemacs-find-tag)))
-
-  (use-package treemacs-evil
-    :after treemacs evil
-    :ensure t)
-
-  (use-package treemacs-icons-dired
-    :after treemacs dired
-    :ensure t
-    :config (treemacs-icons-dired-mode))
-
-
-#+end_src
-
-* Completion
-#+begin_src elisp
-  (use-package company
-    :hook
-    (prog-mode . company-mode)
-    (org-mode . company-mode)
-    :config
-    (setq company-tooltip-align-annotations t))
-#+end_src
-
-
-* Search
-#+begin_src elisp
-;; counsel includes ivy and swiper. 
-(use-package counsel
-  :ensure t
-  :hook
-  (after-init . ivy-mode)
-  (after-init . counsel-mode)
-  
-  :config
-
-  ;; all-the-icons 美化
-  ;; https://github.com/asok/all-the-icons-ivy
-  ;; (use-package all-the-icons-ivy
-  ;;   :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
-  
-  ;; 移动搜索框位置
-  ;; https://github.com/tumashu/ivy-posframe
-  ;; (use-package ivy-posframe
-  ;;   :config
-  ;; 
-  ;;   ;; 显示位置为居中，
-  ;;   (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
-  ;; 
-  ;;   ;; 设置边框
-  ;;   (setq ivy-posframe-parameters
-  ;;     '((left-fringe . 8)
-  ;;       (right-fringe . 8)))
-  ;;   
-  ;;   (ivy-posframe-mode 1)
-  ;; )
-  
-  
-  (general-define-key
-  :prefix "C-c"
-  "b" 'counsel-switch-buffer
-  "r" 'counsel-recentf
-  )
-
-  ;; 显示搜索结果至少输入 1 个字符
-  (setq counsel-more-chars-alist 1))
-
-(use-package evil
-  :bind ("C-s" . counsel-grep-or-swiper))
-
-;; 拼音支持
-;; from https://emacs-china.org/t/topic/6069/23
-(use-package pyim
-  :after ivy
-  :config
-
-  (defun eh-ivy-cregexp (str)
-    (let ((x (ivy--regex-plus str))
-          (case-fold-search nil))
-      (if (listp x)
-          (mapcar (lambda (y)
-                    (if (cdr y)
-                        (list (if (equal (car y) "")
-                                  ""
-                                (pyim-cregexp-build (car y)))
-                              (cdr y))
-                      (list (pyim-cregexp-build (car y)))))
-                  x)
-        (pyim-cregexp-build x))))
-  
-  (setq ivy-re-builders-alist
-        '((t . eh-ivy-cregexp))))
-#+end_src
 
 * Basic Editing
 ** Evil Mode
@@ -633,7 +436,6 @@ Besides, use ~C-h~ to get some useful information:
                                       ))
     (evil-collection-init))
 #+end_src
-
 
 ** File Locking
 No need for =~= files when editing. 
@@ -763,13 +565,156 @@ Increase undo limit.
   (setq undo-outer-limit 120000000)
 #+end_src
 
+* Utils
+** Shortkey
+*** Shortkey Hint
+[[https://github.com/justbur/emacs-which-key][which-key]] displays available keybindings in popup, the displaying has 0.3 second idle delay. 
 
+Besides, use ~C-h~ to get some useful information:
+- ~C-h v~ :: describe variable, based on focus or input
+- ~C-h f~ :: describe function, based on focus or input
+- ~C-h b~ :: describe shorkey binding
 
+#+begin_src elisp
+(use-package which-key
+  :bind
+  (:map help-map ("C-h" . which-key-C-h-dispatch))
+  :hook
+  (after-init . which-key-mode)
+  :custom
+  (which-key-idle-delay 0.3)
+  (which-key-popup-type 'side-window)
+  (which-key-side-window-location 'bottom)
+  (which-key-show-docstrings t)
+  (which-key-max-display-columns 2)
+  (which-key-show-prefix t)
+  (which-key-side-window-max-height 8)
+  (which-key-max-description-length 80))
+#+end_src
+
+*** Define Shortkey
+[[https://github.com/noctuid/general.el][general.el]] provides a more convenient method for binding keys in emacs (for both evil and non-evil users). 
+
+#+begin_src elisp
+  (use-package general)
+#+end_src
+
+[[https://github.com/abo-abo/hydra][Hydra]] is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra.
+
+#+begin_src elisp
+  (use-package hydra
+    :commands (hydra-default-pre
+               hydra-keyboard-quit
+               hydra--call-interactively-remap-maybe
+               hydra-show-hint
+               hydra-set-transient-map))
+
+  ;; pretty-hydra provides a macro pretty-hydra-define to make it easy to create hydras with a pretty table layout with some other bells and whistles
+  (use-package pretty-hydra)
+#+end_src
+
+** Templates
+#+begin_src elisp
+  (use-package yasnippet
+    :diminish yas-minor-mode
+    :hook (after-init . yas-global-mode)
+    :config
+    (setq yas-snippet-dirs
+          '("~/.emacs.d/snippets"
+            )))
+
+  ;; (use-package yasnippet-snippets)
+#+end_src
+
+** Completion
+#+begin_src elisp
+  (use-package company
+    :hook
+    (prog-mode . company-mode)
+    (org-mode . company-mode)
+    :custom
+    (company-idle-delay 0.5) ;; 弹层延迟显示时长
+    ;; (company-begin-commands nil) ;; 取消注释可以禁用弹层
+    :bind
+    (:map company-active-map
+      ("C-n". company-select-next)
+      ("C-p". company-select-previous)
+      ("M-<". company-select-first)
+      ("M->". company-select-last)))
+#+end_src
+
+** Search
+#+begin_src elisp
+;; counsel includes ivy and swiper. 
+(use-package counsel
+  :ensure t
+  :hook
+  (after-init . ivy-mode)
+  (after-init . counsel-mode)
+  
+  :config
+
+  ;; all-the-icons 美化
+  ;; https://github.com/asok/all-the-icons-ivy
+  ;; (use-package all-the-icons-ivy
+  ;;   :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
+  
+  ;; 移动搜索框位置
+  ;; https://github.com/tumashu/ivy-posframe
+  ;; (use-package ivy-posframe
+  ;;   :config
+  ;; 
+  ;;   ;; 显示位置为居中，
+  ;;   (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
+  ;; 
+  ;;   ;; 设置边框
+  ;;   (setq ivy-posframe-parameters
+  ;;     '((left-fringe . 8)
+  ;;       (right-fringe . 8)))
+  ;;   
+  ;;   (ivy-posframe-mode 1)
+  ;; )
+  
+  
+  (general-define-key
+  :prefix "C-c"
+  "b" 'counsel-switch-buffer
+  "r" 'counsel-recentf
+  )
+
+  ;; 显示搜索结果至少输入 1 个字符
+  (setq counsel-more-chars-alist 1))
+
+(use-package evil
+  :bind ("C-s" . counsel-grep-or-swiper))
+
+;; 拼音支持
+;; from https://emacs-china.org/t/topic/6069/23
+(use-package pyim
+  :after ivy
+  :config
+
+  (defun eh-ivy-cregexp (str)
+    (let ((x (ivy--regex-plus str))
+          (case-fold-search nil))
+      (if (listp x)
+          (mapcar (lambda (y)
+                    (if (cdr y)
+                        (list (if (equal (car y) "")
+                                  ""
+                                (pyim-cregexp-build (car y)))
+                              (cdr y))
+                      (list (pyim-cregexp-build (car y)))))
+                  x)
+        (pyim-cregexp-build x))))
+  
+  (setq ivy-re-builders-alist
+        '((t . eh-ivy-cregexp))))
+#+end_src
 
 * Writing Languages
-** Org Mode
-*** Basic
-*** Font
+* Org Mode
+** Font
 #+begin_src elisp
   (use-package org
     :hook
@@ -782,7 +727,8 @@ Increase undo limit.
     (set-face-attribute 'org-block-begin-line nil :slant 'italic :inherit 'fixed-pitch)
     (setq org-src-fontify-natively t))
 #+end_src
-*** Org Superstar
+
+** Headling and Lists Stars
 [[https://github.com/integral-dw/org-superstar-mode][Org Superstar]] prettifies headings and plain lists in Org mode.
 #+begin_src elisp
   (use-package org-superstar
@@ -791,15 +737,74 @@ Increase undo limit.
     :config
     (setq org-hide-leading-stars t)
     :custom
-    ;; Change org headlines' style to ›.
-    (org-superstar-headline-bullets-list '("›"))
+    ;; Change org headlines' style to ? ["›"]
+    (org-superstar-headline-bullets-list '("§"))
     ;; Change org unordered list styles.
     (org-superstar-prettify-item-bullets t)
     (org-superstar-item-bullet-alist '((?* . ?•)
                                        (?+ . ?•)
                                        (?- . ?•))))
 #+end_src
-*** Org Appear
+
+** Symbols
+#+begin_src elisp
+  (defun org-icons ()
+    (setq prettify-symbols-alist
+        '((":PROPERTIES:" . "≡")
+            ("#+begin_src" . "{")
+            ("#+end_src" . "}")
+            ("#+begin_quote" . "“")
+            ("#+end_quote" . "”")
+            ("#+begin_example" . "«")
+            ("#+end_example" . "»")
+            ("#+RESULTS:" . "⇒")
+            ("#+attr_org:" . "⌘")))
+    (prettify-symbols-mode))
+  (add-hook 'org-mode-hook 'org-icons)
+#+end_src
+
+#+begin_src cpp
+  int main() { cout << "Hello world" << endl; } 
+#+end_src
+
+#+begin_example
+  
+#+end_example
+
+#+begin_quote
+
+#+end_quote
+
+** Drawer
+#+begin_src elisp
+    ;; Fold drawers by default
+    (add-hook 'org-mode-hook 'org-hide-drawer-all
+  )
+#+end_src
+
+** Link
+#+begin_src elisp
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; Org links
+  (setq org-return-follows-link t)
+  (setq org-confirm-elisp-link-function nil)
+#+end_src
+
+** Mixed Pitch
+#+begin_src elisp 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; Mixed pitch mode
+  (use-package mixed-pitch
+    :config ;; Ensure larger font can be displayed correctly
+    (setq mixed-pitch-set-height t)
+    :hook
+    (org-mode . mixed-pitch-mode))
+#+end_src
+
+
+** Org Appear
 [[https://github.com/awth13/org-appear][Org Appear]] toggles visibility of hidden Org mode element parts upon entering and leaving an element.
 
 #+begin_src elisp
@@ -824,7 +829,8 @@ Increase undo limit.
     (org-appear-autokeywords t)
     (org-appear-autosubmarkers t))
 #+end_src
-*** Xenops
+
+** Xenops
 [[https://github.com/dandavison/xenops][xenops]] is an editing environment for LaTeX mathematical documents with async rendering.
 
 #+begin_src elisp
@@ -839,7 +845,7 @@ Increase undo limit.
 
 #+end_src
 
-*** Images
+** Images
 #+begin_src elisp
   (use-package org
     :custom
@@ -848,6 +854,7 @@ Increase undo limit.
     (org-image-actual-width 500)
     ;; Always download and display remote images.
     ;; (org-display-remote-inline-image 'download)
+    (org-image-actual-width nil) ;; use ATTR_ORG
   )
   (general-define-key
     :keymaps 'org-mode-map
@@ -857,18 +864,24 @@ Increase undo limit.
 
 #+begin_src elisp
   (use-package org-download
+    :ensure nil
+    :after org
+    :bind
+    (:map org-mode-map
+          (("s-Y" . org-download-screenshot)
+           ("s-y" . org-download-yank)))
     :config
-    (setq org-download-image-dir "images")
-    (setq org-download-display-inline-images nil)
+    (setq org-download-display-inline-images t)
+    (setq org-download-heading-lvl nil)
     (setq org-download-image-org-width 150))
 #+end_src
 
-*** Table
+** Table
 #+begin_src elisp
   (use-package table)
 #+end_src
 
-*** Table Aligned
+** Table Aligned
 #+begin_src elisp
   (use-package valign
     :hook (org-mode . valign-mode)
@@ -876,14 +889,19 @@ Increase undo limit.
     (setq valign-fancy-bar t))
 #+end_src
 
-*** Latex
+** Latex
 #+begin_src elisp
-  (general-define-key
-    :keymaps 'org-mode-map
-    :prefix "C-c"
-    "l" 'org-toggle-latex-fragment)
+  ; (general-define-key
+  ;   :keymaps 'org-mode-map
+  ;   :prefix "C-c"
+  ;   "l" 'org-toggle-latex-fragment)
+
+  ; (use-package org
+  ;   :config
+  ;   (setq org-startup-with-latex-preview t))
 #+end_src
-*** Org Babel
+
+** Org Babel
 #+begin_src elisp
   (use-package org
     :config
@@ -912,26 +930,41 @@ Increase undo limit.
     (setq org-ditaa-jar-path (expand-file-name "~/.emacs.d/others/ditaa-0.11.jar")))
 #+end_src
 
-
-*** Indent & Margin
+** Indent & Margin
 #+begin_src elisp
-(use-package org
-  :hook
-  ;; enable headline and subcontent in the indented view.
-  (org-mode . org-indent-mode)
-  ;; center content
-  (org-mode . perfect-margin-mode) 
-  :custom
-  ;; fold all contents on opening a org file.
-  ;; (org-startup-folded t)
-  ;; disable reindent on every time editing code block.
-  (org-src-preserve-indentation nil)
-  (org-edit-src-content-indentation 2)
-  ;; turncate lines
-  (org-startup-truncated nil))
+  (use-package org
+    :hook
+    ;; enable headline and subcontent in the indented view.
+    ;; (org-mode . org-indent-mode)
+    ;; center content
+    (org-mode . perfect-margin-mode) 
+    :custom
+    ;; fold all contents on opening a org file.
+    ;; (org-startup-folded t)
+    ;; disable reindent on every time editing code block.
+    (org-src-preserve-indentation nil)
+    (org-edit-src-content-indentation 2)
+    ;; turncate lines
+    (org-startup-truncated nil)
+    :config
+    (setq org-startup-indented t)
+    (setq org-adapt-indentation t)
+    )
 #+end_src
 
-*** UX
+** Bars
+#+begin_src elisp
+  ; (require 'org-bars)
+  ; (use-package org-bars
+  ;   :ensure nil
+  ;   :hook (org-mode . org-bars-mode)
+  ;   :config
+  ;   (setq org-bars-color-options nil)
+  ;   (setq org-bars-with-dynamic-stars-p nil) ;
+  ;   )
+#+end_src
+
+** UX
 #+begin_src elisp
 (use-package org
   :init
@@ -952,12 +985,19 @@ Increase undo limit.
   )
 #+end_src
 
-*** Export
+** Export
 #+begin_src elisp
   ;; (use-package
   ;;   :custom
   ;;   ;; export org to pdf through latex, support chinese.
   ;;   (org-latex-pdf-process '("xelatex -interaction nonstopmode %f" "xelatex -interaction nonstopmode %f")))
+#+end_src
+
+** Show section numbers
+#+begin_src elisp
+  (use-package org
+    :hook
+    (org-mode . org-num-mode))
 #+end_src
 
 ** Dot
@@ -978,6 +1018,12 @@ Increase undo limit.
     (setq org-plantuml-jar-path "/usr/share/plantuml/lib/plantuml.jar"))
 
 #+end_src
+** 
+#+begin_src elisp
+  (use-package org
+    :config
+    (setq org-ellipsis " ⤵"))
+#+end_src
 
 * MyBase
 ** Root Directory
@@ -987,13 +1033,12 @@ Increase undo limit.
 
 ** Blog
 #+begin_src elisp
-  (defvar mybase-blog-dir (concat mybase-root-dir "Blog"))
+  (defvar mybase-blog-dir (concat mybase-root-dir "Export/Blog"))
 
   (require 'ox)
   (use-package ox-hugo
     :after ox)
 #+end_src
-
 
 ** Reactor
 *** Util
@@ -1098,17 +1143,13 @@ Config keywords:
   (use-package org
    :config
    (setq org-todo-keywords
-      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
-              (sequence "WAITING(w@/!)" "HOLD(h@/!)" "|" "CANCELLED(c@/!)" "PHONE" "MEETING"))))
+      (quote ((sequence "TODO(t)" "|" "DONE(d)")
+              (sequence "SUSPENDED(s@/!)" "|" "CANCELLED(c@/!)"))))
    (setq org-todo-keyword-faces
       (quote (("TODO" :foreground "red" :weight bold)
-              ("NEXT" :foreground "blue" :weight bold)
               ("DONE" :foreground "forest green" :weight bold)
-              ("WAITING" :foreground "orange" :weight bold)
-              ("HOLD" :foreground "magenta" :weight bold)
-              ("CANCELLED" :foreground "forest green" :weight bold)
-              ("MEETING" :foreground "forest green" :weight bold)
-              ("PHONE" :foreground "forest green" :weight bold)))))
+              ("SUSPENDED" :foreground "orange" :weight bold)
+              ("CANCELLED" :foreground "forest green" :weight bold)))))
 #+end_src
 
 Add tasks and projects to ~org-agenda~:
@@ -1174,10 +1215,106 @@ _d_: delete     _m j_: Journal    _R_: rename     _g f_: phone
 
 *** Agenda
 #+begin_src elisp
-(use-package org
-  :bind
-  ("<f12>" . org-agenda))
+  (use-package org
+    :bind
+    ("<f12>" . org-agenda)
+    :config
+    (setq org-agenda-dim-blocked-tasks 'invisible)
+    (setq org-enforce-todo-dependencies t))
 #+end_src
+
+*** Priority
+#+begin_src elisp
+  (defun map-face-to-custom-priority (f)
+    (cond ((string= f "00") "A")
+          ((string= f "01") "B")
+          ((string= f "10") "C")
+          ((string= f "02") "D")
+          ((string= f "11") "E")
+          ((string= f "20") "F")
+          ((string= f "12") "G")
+          ((string= f "21") "H")
+          ((string= f "22") "I")
+          (t "?")))
+  (defun org-set-subtree-priority (p)
+    (interactive "sPriority: ")
+    (org-map-entries
+     (lambda ()
+       (interactive)
+       (org-entry-put (point) "PRIORITY" (map-face-to-custom-priority p)))
+     nil
+     'tree))
+
+  (use-package org
+    :bind
+    ("C-c k P" . org-set-subtree-priority)
+    )
+#+end_src
+
+#+begin_src elisp
+  (use-package org-fancy-priorities
+    :hook
+    (org-mode . org-fancy-priorities-mode)
+    :config
+    (setq org-fancy-priorities-list '((?A . "Urg H Imp H")
+                                      (?B . "Urg H Imp M")
+                                      (?C . "Urg M Imp H")
+                                      (?D . "Urg H Imp L")
+                                      (?E . "Urg M Imp M")
+                                      (?F . "Urg L Imp H")
+                                      (?G . "Urg M Imp L")
+                                      (?H . "Urg L Imp M")
+                                      (?I . "Urg L Imp L"))))
+#+end_src
+
+
+
+
+
+*** Super Agenda
+#+begin_src elisp
+  (use-package org-super-agenda
+    :hook
+    (after-init . org-super-agenda-mode)
+    :config
+      (setq org-agenda-custom-commands
+            '(("z" "Hugo view"
+               ((agenda "" ((org-agenda-span 'day)
+                            (org-super-agenda-groups
+                             '((:name "Today"
+                                :time-grid t
+                                :todo "TODAY")))))
+                (alltodo "" ((org-agenda-overriding-header "")
+                             (org-super-agenda-groups
+                              '(;; Each group has an implicit boolean OR operator between its selectors.
+                                (:name "Today"
+                                 :deadline today
+                                 :face (:background "black"))
+                                (:name "Passed deadline"
+                                 :and (:deadline past :todo ("TODO" "WAITING" "HOLD" "NEXT"))
+                                 :face (:background "#7f1b19"))
+                                (:name "Work important"
+                                 :and (:priority>= "B" :category "Work" :todo ("TODO" "NEXT")))
+                                (:name "Work other"
+                                 :and (:category "Work" :todo ("TODO" "NEXT")))
+                                (:name "Important"
+                                 :priority "A")
+                                (:priority<= "B"
+                                 ;; Show this section after "Today" and "Important", because
+                                 ;; their order is unspecified, defaulting to 0. Sections
+                                 ;; are displayed lowest-number-first.
+                                 :order 1)
+                                (:name "Papers"
+                                 :file-path "org/roam/notes")
+                                (:name "Waiting"
+                                 :todo "WAITING"
+                                 :order 9)
+                                (:name "On hold"
+                                 :todo "HOLD"
+                                 :order 10)))))))))
+    )
+#+end_src
+
 
 
 ** Databases
@@ -1195,7 +1332,8 @@ Config:
     (setq sql-sqlite-program "/usr/bin/sqlite3")
     (setq calibredb-db-dir (expand-file-name "metadata.db" mybase-databases-dir))
     (setq calibredb-program "/usr/bin/calibredb")
-    (setq calibredb-library-alist '(((concat mybase-root-dir "Databases/Materials"))))
+    (setq calibredb-root-dir "/home/hermit/MyBase/Databases/Materials")
+    (setq calibredb-library-alist '(("/home/hermit/MyBase/Databases/Materials")))
     (setq calibredb-virtual-library-alist
           '(("Materials" . "Material")
             ("AlgorithmPuzzles" . "AlgorithmPuzzle")
@@ -1240,6 +1378,7 @@ Root directory:
 #+end_src
 
 Config:
+TODO auto next line
 #+begin_src elisp
   (use-package org-roam
     :config
@@ -1247,12 +1386,12 @@ Config:
     (setq org-roam-dailies-capture-templates
   	'(("d" "note" plain "%?" :if-new
              (file+head "%<%Y>/%<%Y%02m>/%<%Y%02m%02d>/%<%Y-%02m-%02d>.org" 
-                        "#+TITLE: %<%Y-%02m-%02d>\n#+AUTHOR: hermit\n#+FILETAGS: diary\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <2021-08-01 Sun 15:12:43>\n\n* 简介\n\n* 参考资料\n")
+                        "#+TITLE: %<%Y-%02m-%02d>\n#+AUTHOR: hermit\n#+FILETAGS: diary\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <2021-08-01 Sun 15:12:43>\n\n* 参考资料\n\n* 例题\n\n* 简介\n")
              :unnarrowed t
              :immediate-finish)))
   
     (general-define-key
-     :prefix "C-c f"
+     :prefix "C-c j"
      
      "t" 'org-roam-dailies-capture-today
      "f" 'org-roam-dailies-goto-date
@@ -1260,85 +1399,139 @@ Config:
 #+end_src
 
 ** Leaves
+*** Basic Config
 Root directory:
 #+begin_src elisp
   (defvar mybase-leaves-dir  (concat mybase-root-dir "Leaves"))
 #+end_src  
 
-Config:
+*** Roam-like Notes
 #+begin_src elisp
-(use-package org-roam
-  :after org
-  :config
-  (setq org-roam-v2-ack t)
-  (add-hook 'after-init-hook 'org-roam-mode)
-  (setq org-roam-directory mybase-leaves-dir)
-  (setq org-roam-capture-templates
-	'(("n" "note" plain "%?" :if-new
-           (file+head "%<%Y%02m%02d%02H%02M%02S>/main.org" 
-                      "#+TITLE: ${title}\n#+AUTHOR: hermit\n#+FILETAGS: knowledge\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <>\n\n* 简介\n\n* 参考资料\n")
-           :unnarrowed t
-           :immediate-finish)))
+  (use-package org-roam
+    :after org
+    :config
+    (setq org-roam-v2-ack t)
+    (add-hook 'after-init-hook 'org-roam-mode)
+    (setq org-roam-directory mybase-leaves-dir)
+    (setq org-roam-capture-templates
+    '(("n" "note" plain "%?" :if-new
+             (file+head "%<%Y%02m%02d%02H%02M%02S>/main.org" 
+                        "#+TITLE: ${title}\n#+AUTHOR: hermit\n#+FILETAGS: knowledge\n#+CREATED_TIME: <%<%Y-%02m-%02d %3a %02H:%02M:%02S>>\n#+MODIFIED_TIME: <>\n\n* 参考资料\n\n* 例题\n\n* 简介\n")
+             :unnarrowed t
+             :immediate-finish)))
 
-  (general-define-key
-   :prefix "C-c s"
-   "s" 'org-roam-node-find
-   "c" 'org-roam-capture
-   "i" 'org-roam-node-insert
-   "r" 'org-roam-buffer-toggle
-   "a" 'org-roam-alias-add)
+    (general-define-key
+     :prefix "C-c s"
+     "s" 'org-roam-node-find
+     "c" 'org-roam-capture
+     "i" 'org-roam-node-insert
+     "r" 'org-roam-buffer-toggle
+     "a" 'org-roam-alias-add)
 
-  (setq org-roam-completion-system 'ivy)
-  
-  (org-roam-setup))
+    (setq org-roam-completion-system 'ivy)
+
+    (org-roam-setup))
+
+    (use-package websocket
+        :after org-roam)
+
+  (use-package org-roam-ui
+      :after org-roam ;; or :after org
+  ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;;         a hookable mode anymore, you're advised to pick something yourself
+  ;;         if you don't care about startup time, use
+  ;;  :hook (after-init . org-roam-ui-mode)
+      :config
+      (setq org-roam-ui-sync-theme t
+            org-roam-ui-follow t
+            org-roam-ui-update-on-save t
+            org-roam-ui-open-on-start t))
+#+end_src 
+
+*** Global Searching
+#+begin_src elisp
+  ; (use-package deft
+  ;   :after org
+  ;   :bind
+  ;   ("C-c s f" . deft)
+  ;   :custom
+  ;   (deft-recursive t)
+  ;   (deft-use-filter-string-for-filename t)
+  ;   (deft-default-extension "org")
+  ;   (deft-directory org-roam-directory))
+  (use-package time-stamp
+    :config
+    (add-hook 'before-save-hook 'time-stamp)
+    (setq time-stamp-line-limit 10)
+    (setq time-stamp-start "#[+]MODIFIED_TIME:[ 	]+\\\\?[\"<]+")
+    (setq time-stamp-format "%Y-%02m-%02d %3a %02H:%02M:%02S"))
+
+  (defun get-string-from-file (filePath)
+    "Return filePath's file content."
+    (with-temp-buffer
+      (insert-file-contents filePath)
+      (buffer-string)))
+
+  (defun mybase-leaves-rename-buffer ()
+    (let ((file (buffer-file-name)))
+      (when (string-prefix-p mybase-leaves-dir file)
+        (let* ((content (get-string-from-file file))
+               (_ (string-match "#\\+TITLE: \\(.*\\)$" content))
+               (title (match-string 1 content)))
+          (rename-buffer (format "☆ %s" title))))))
+
+  (use-package org
+    :hook
+    (org-mode . mybase-leaves-rename-buffer))
+
+  (defun mybase-leaves-save-update ()
+    (mybase-leaves-rename-buffer))
+
+  (add-hook 'before-save-hook 'mybase-leaves-save-update)
+
+  ;; https://emacs-china.org/t/emacs-builtin-mode/11937/71?u=shadw3002
+  (use-package recentf
+    :config
+    (setq recentf-exclude (list (concat mybase-leaves-dir "/*"))))
 #+end_src
 
+
+*** Flash Card
+https://www.leonrische.me/fc/review.html
+
 #+begin_src elisp
-(use-package deft
-  :after org
-  :bind
-  ("C-c s f" . deft)
-  :custom
-  (deft-recursive t)
-  (deft-use-filter-string-for-filename t)
-  (deft-default-extension "org")
-  (deft-directory org-roam-directory))
-(use-package time-stamp
-  :config
-  (add-hook 'before-save-hook 'time-stamp)
-  (setq time-stamp-line-limit 10)
-  (setq time-stamp-start "#[+]MODIFIED_TIME:[ 	]+\\\\?[\"<]+")
-  (setq time-stamp-format "%Y-%02m-%02d %3a %02H:%02M:%02S")
-  )
-(defun get-string-from-file (filePath)
-  "Return filePath's file content."
-  (with-temp-buffer
-    (insert-file-contents filePath)
-    (buffer-string)))
+  (use-package hydra)
+  (use-package evil)
+  (use-package org-fc
+    :load-path "~/src/org-fc"
+    :custom
+    (org-fc-directories (list mybase-leaves-dir))
 
-(defun mybase-leaves-rename-buffer ()
-  (let ((file (buffer-file-name)))
-    (when (string-prefix-p mybase-leaves-dir file)
-      (let* ((content (get-string-from-file file))
-             (_ (string-match "#\\+TITLE: \\(.*\\)$" content))
-             (title (match-string 1 content)))
-        (rename-buffer (format "☆ %s" title))))))
+    :config
+    (require 'org-fc-hydra)
+    (global-set-key (kbd "C-c f") 'org-fc-hydra/body)
+    (require 'org-fc-keymap-hint)
 
-(use-package org
-  :hook
-  (org-mode . mybase-leaves-rename-buffer))
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+      (kbd "RET") 'org-fc-review-flip
+      (kbd "n") 'org-fc-review-flip
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit)
 
-(defun mybase-leaves-save-update ()
-  (mybase-leaves-rename-buffer))
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+      (kbd "a") 'org-fc-review-rate-again
+      (kbd "h") 'org-fc-review-rate-hard
+      (kbd "g") 'org-fc-review-rate-good
+      (kbd "e") 'org-fc-review-rate-easy
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit)
 
-(add-hook 'before-save-hook 'mybase-leaves-save-update)
 
-;; https://emacs-china.org/t/emacs-builtin-mode/11937/71?u=shadw3002
-(use-package recentf
-  :config
-  (setq recentf-exclude '((concat mybase-root-dir "Leaves/*")
-                          )))
+    )
 #+end_src
+
+
+
 
 ** Channels
 #+begin_src elisp
@@ -1394,16 +1587,52 @@ Config:
     :diminish
     :commands rspec-install-snippets
     :hook (dired-mode . rspec-dired-mode)
-    :config (with-eval-after-load 'yasnippet
-              (rspec-install-snippets)))
+    ;; :config (with-eval-after-load 'yasnippet
+    ;;           (rspec-install-snippets))
+)
 #+end_src
 
 ** Rust
-#+begin_src elisp
-  (use-package rustic)
+https://www.jianshu.com/p/73ad87d0b88b
 
+#+begin_src elisp
   (use-package rust-playground)
 #+end_src
+
+*** ~rustic~
+
+#+begin_src elisp 
+  (use-package rustic
+    :ensure
+    :bind (:map rustic-mod-map
+        ("M-j" . lsp-ui-imenu)
+        ("M-?" . lsp-find-references)
+        ("C-c C-c l" . flycheck-list-errors)
+        ("C-c C-c a" . lsp-execute-code-action)
+        ("C-c C-c r" . lsp-rename)
+        ("C-c C-c q" . lsp-wordspace-restart)
+        ("C-c C-c Q" . lsp-workspace-shutdown)
+        ("C-c C-c s" . lsp-rust-analyzer-status))
+    :config
+    ;; 减少闪动可以取消这里的注释
+    ;; (setq lsp-eldoc-hook nil)      
+    ;; (setq lsp-enable-symbol-highlighting nil)
+    ;; (setq lsp-signature-auto-activate nil)
+
+    ;; 注释下面这行可以禁用保存时 rustfmt 格式化
+    (setq rustic-format-on-save t)
+    (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+  (defun rk/rustic-mode-hook ()
+    ;; 所以运行 C-c C-c C-r 无需确认就可以工作，但不要尝试保存不是文件访问的 rust 缓存。
+    ;; 一旦 https://github.com/brotzeit/rustic/issues/253 问题处理了
+    ;; 就不需要这个配置了
+    (when buffer-file-name
+      (setq-local buffer-save-without-query t)))
+#+end_src
+
+
+
 
 ** Haskell
 #+begin_src elisp
@@ -1428,7 +1657,6 @@ Config:
     :config
     (add-hook 'before-save-hook 'gofmt-before-save))
 #+end_src
-
 
 * Formats
 
@@ -1472,82 +1700,6 @@ Config:
   ;;   (setq anki-collection-dir "/Users/chandamon/Library/Application Support/Anki2/User 1"))
 #+end_src
 
-* Tools
 
-** http
-#+begin_src elisp
-  (use-package ob-http)
-#+end_src
-
-** dired
-#+begin_src elisp
-  (use-package emacs
-    :init
-    ;; Always delete and copy recursively
-    (setq dired-recursive-deletes 'always
-          dired-recursive-copies 'always
-          dired-dwim-target t)
-
-    :config
-    (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
-    ;; 自动猜测目标路径
-    (setq dired-dwim-target t)
-  
-    ;; 让dired mode始终占据一个缓冲区
-    (put 'dired-find-alternate-file 'disabled nil)
-
-  (use-package dired-ranger
-    :ensure t
-    :bind (:map dired-mode-map
-                ("W" . dired-ranger-copy)
-                ("X" . dired-ranger-move)
-                ("Y" . dired-ranger-paste))))
-  ;; dired 高亮
-  (use-package diredfl
-    :ensure t
-    :config (diredfl-global-mode t))
-
-  (use-package all-the-icons-dired
-    :ensure t
-    :config
-    (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
-#+end_src
-
-#+RESULTS:
-: t
-
-** ob-go
-#+begin_src elisp
-  (use-package ob-go)
-#+end_src
-
-** Terminal
-#+begin_src elisp
-  (use-package vterm
-    :bind
-    (:map vterm-mode-map
-     ("s-k"       . vterm-clear)
-     ("<s-left>"  . vterm-send-C-a)
-     ("<s-right>" . vterm-send-C-e)
-     ("C-c"       . vterm-send-C-c))
-
-    ;; Auto compile
-    ;; :custom
-    ;; (vterm-always-compile-module t)
-    :init
-    ;; Toggle vterm open and hide with Control + `
-    (defun vterm-toggle ()
-      (interactive)
-      (if (eq major-mode 'vterm-mode)
-          (previous-buffer)
-        (vterm)))
-
-    (bind-key (kbd "C-`") 'vterm-toggle)
-    :config
-    ;; Disable evil mode for vterm.
-    (evil-set-initial-state 'vterm-mode 'emacs)
-    ;; Close vterm buffer without confriming.
-    (setq kill-buffer-query-functions nil))
-#+end_src
-
+**  magit
 
